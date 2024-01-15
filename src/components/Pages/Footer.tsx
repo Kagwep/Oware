@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 
-import companyLogoWhite from '../assets/images/logo.png';
-import facebookLogo from '../assets/images/icon-facebook.svg';
-import youtubeLogo from '../assets/images/icon-youtube.svg';
-import twitterLogo from '../assets/images/icon-twitter.svg';
-import pinterestLogo from '../assets/images/icon-pinterest.svg';
-import instagramLogo from '../assets/images/icon-instagram.svg';
+import companyLogoWhite from '../../assets/images/logo.png';
+import facebookLogo from '../../assets/images/icon-facebook.svg';
+import youtubeLogo from '../../assets/images/icon-youtube.svg';
+import twitterLogo from '../../assets/images/icon-twitter.svg';
+import pinterestLogo from '../../assets/images/icon-pinterest.svg';
+import instagramLogo from '../../assets/images/icon-instagram.svg';
 
 const Footer = () => {
   return (
@@ -18,7 +18,7 @@ const Footer = () => {
             Copyright © 2023, All Rights Reserved
           </div>
           {/* Logo */}
-          <div>
+          <div className="pt-2 pb-5">
             <img src={companyLogoWhite} className='h-8' alt='' />
           </div>
           {/* Social Links Container */}

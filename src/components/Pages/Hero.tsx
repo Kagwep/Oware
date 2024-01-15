@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-import illustrationIntro from '../assets/images/illustration-intro.jfif';
+import illustrationIntro from '../../assets/images/illustration-intro.jfif';
 
 const Hero = () => {
   return (

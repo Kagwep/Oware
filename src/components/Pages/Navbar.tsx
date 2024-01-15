@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import companyLogo from '../assets/images/logo.png';
+import companyLogo from '../../assets/images/logo.png';
 
 const Navbar = () => {
   const [toggleMenu, setToggleMenu] = useState(false);
@@ -21,7 +21,7 @@ const Navbar = () => {
           </Link>
         </div>
         {/* Button */}
-        <Link to="/other-route" className="bg-amber-700 text-white py-2 px-4 rounded-full">
+        <Link to="/play" className="bg-amber-700 text-white py-2 px-4 rounded-full">
             Play now
         </Link>
         {/* Hamburger Icon */}

@@ -1,9 +1,7 @@
 import { useState } from 'react'
-import { BrowserRouter } from 'react-router-dom'
-import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Footer from './components/Footer';
-import CallToAction from './components/CallToAction';
+import { BrowserRouter,Route,Routes } from 'react-router-dom'
+import HomePage from './components/Pages/Index'
+import Canvas from './components/Game/Logic/Oware'
 
 import './App.css'
 
@@ -12,12 +10,12 @@ function App() {
 
   return (
     <>
-        <BrowserRouter>
-          <Navbar />
-          <Hero />
-          <CallToAction />
-          <Footer />
-        </BrowserRouter>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/"  element={<HomePage />} />
+        <Route path="/play" element={<Canvas />} />
+      </Routes>
+    </BrowserRouter>
     </>
   )
 }
