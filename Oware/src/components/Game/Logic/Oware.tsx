@@ -1,7 +1,5 @@
 import './style.css';
-
-
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef,useState, useMemo, useCallback } from 'react';
 import {
     Scene,
     Engine,
@@ -24,15 +22,44 @@ import './style.css';
 import '@babylonjs/loaders';
 import {houses} from './House';
 import { seeds } from './Seed';
-import { state } from './GameState';
+import { state,playersStates } from './GameState';
 import { housesToAccess } from './House';
 import sphereTexture from "../Textures/nuttexture3.avif";
+import CustomDialog from '../../Customs/CustomDialog';
+import { Card, CardContent, CircularProgress, Typography, Grid } from '@mui/material';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
+
+export interface Players {
+  id:string;
+  username:string;
+}
+
+export interface CanvasProps {
+  players:Players[];
+  room:string;
+  orientation:string;
+  cleanup:() => void;
+  username:string;
+}
   
 
-const Canvas:React.FC = () => {
+const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,username }) => {
+
+    const [over, setOver] = useState("");
 
 
+    const first_player = playersStates["player-1"]
+    const second_player = playersStates["player-2"]
+
+    const isWaitingForOpponent = !(players[0] && Object.keys(players[0]).length !== 0 && players[1] && Object.keys(players[1]).length !== 0);
+
+    if (isWaitingForOpponent){
+      
+    }else{
+      
+    }
 
     const createScene = async (canvas: HTMLCanvasElement | null): Promise<{ scene: Scene | undefined, defaultSpheres: () => void }> => {
        
@@ -390,14 +417,83 @@ const Canvas:React.FC = () => {
 
 
   return (
-    <div>
-        <h3>
-        Oware
-        </h3>
-    <canvas className='canvas' ref={canvasRef}>
-     
-    </canvas>
- </div>
+    <>
+        <div className='m-5'>
+            <a href="https://flowbite.com" className="flex items-center ">
+                <img src="./logo.png" className="mr-3 h-6 sm:h-9" alt="Flowbite Logo" />
+                <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">Oware</span>
+            </a>
+            <div className='pt-2'>
+            <Card sx={{
+              backgroundColor:'rgb(15 23 42)',
+              borderRadius: '16px 16px 0 0'
+            }}>
+            <CardContent>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item>
+                  {isWaitingForOpponent ? (
+                  <Grid container alignItems="center" spacing={1}>
+                  <Grid item>
+                    <CircularProgress size={18} />
+                  </Grid>
+                  <Grid item>
+                    <Typography variant="body1" color={'whitesmoke'}>Waiting for opponent</Typography>
+                  </Grid>
+                </Grid>
+                  ) : (
+                    <>
+                    <AccountCircleIcon fontSize="large" color="primary" />
+                    <Grid item>
+                    <div>
+                      <Typography variant="h6" color={'white'} sx={{
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>Player: <span className='text-sky-500 px-1'>{username}</span></Typography>
+                      <Typography variant="body1" color={'white'} sx={{
+                      }}>Room: <span className='text-sky-500 px-1'>{room}</span></Typography>
+                      <Typography variant="body1" color={'white'} sx={{
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>Opponent: <span className='text-sky-500 px-1'>{players[0].username}</span></Typography>
+                    </div>
+                  </Grid>
+                  <Grid item>
+                    <div>
+                      <Typography variant="body1" color={'white'} sx={{
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>Moves Left:<span className='text-sky-500 px-1'> </span></Typography>
+                      <Typography variant="body1" color={'white'} sx={{
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>Turn:  <span className='text-sky-500 px-1'></span></Typography>
+                    </div>
+                  </Grid>
+                  <Grid item>
+                    <ArrowForwardIcon color={'primary'} />
+                  </Grid>
+                  </>
+                  )}
+
+                </Grid>
+  
+              </Grid>
+            </CardContent>
+          </Card>
+        </div>
+        <canvas className='canvas rounded-md' ref={canvasRef}>
+        
+        </canvas>
+        </div>
+        <CustomDialog // <- 5
+        open={Boolean(over)} 
+        title={over}
+        contentText={over}
+        handleContinue={() => {
+          setOver("");
+        }}
+      />
+    </>
   )
 }
 
