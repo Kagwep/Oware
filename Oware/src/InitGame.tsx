@@ -4,6 +4,7 @@ import CustomDialog from "./components/Customs/CustomDialog";
 import socket from './socket';
 import { Players } from "./components/Game/Logic/Oware";
 
+
 export interface ServerJoinRoomResponse {
   error?: any;
   message?: string;
@@ -24,6 +25,18 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [roomInput, setRoomInput] = useState(''); // input state
   const [roomError, setRoomError] = useState('');
+ 
+
+
+  const handleCreateRoom = () => {
+    socket.emit("createRoom", (r: React.SetStateAction<string>) => {
+      console.log(r);
+      setRoom(r);
+
+    });
+  };
+
+
 
   return (
     <Stack
@@ -67,18 +80,12 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
         />
       </CustomDialog>
       {/* Button for starting a game */}
-        <Button
+      <Button
         variant="contained"
-        onClick={() => {
-            socket.emit("createRoom", (r: React.SetStateAction<string>) => {
-            console.log(r);
-            setRoom(r);
-            setOrientation("white");
-            });
-        }}
-        >
+        onClick={handleCreateRoom}
+      >
         Start a game
-        </Button>
+      </Button>
       {/* Button for joining a game */}
       <Button
         onClick={() => {
@@ -87,6 +94,9 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
       >
         Join a game
       </Button>
+
+     
+
     </Stack>
   );
 }

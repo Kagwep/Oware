@@ -10,7 +10,8 @@ export type GameState = {
     inPlay: Seeds;
     captured: Seeds;
     originalHouse:string;
-    room:string
+    room:string;
+    validHouses:string[]
 
 };
 
@@ -23,6 +24,7 @@ export const state: GameState = {
     inPlay: [],
     captured: [],
     originalHouse:"",
+    validHouses:[]
 };
 
 export interface PlayerState{
@@ -39,6 +41,7 @@ export const playersStates: PlayerState = {
         inPlay: [],
         captured: [],
         originalHouse:"",
+        validHouses:[]
     },
 
     "player-2": {
@@ -50,6 +53,7 @@ export const playersStates: PlayerState = {
         inPlay: [],
         captured: [],
         originalHouse:"",
+        validHouses:[]
     },
     
     

@@ -20,7 +20,7 @@ import {
   } from "@babylonjs/core";
 import './style.css';
 import '@babylonjs/loaders';
-import {houses} from './House';
+import {House, houses} from './House';
 import { seeds } from './Seed';
 import { state,playersStates } from './GameState';
 import { housesToAccess } from './House';
@@ -29,6 +29,9 @@ import CustomDialog from '../../Customs/CustomDialog';
 import { Card, CardContent, CircularProgress, Typography, Grid } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { CopyToClipboard } from 'react-copy-to-clipboard';
+import {Button} from '@mui/material';
+import socket from "../../../socket";
 
 
 export interface Players {
@@ -43,11 +46,25 @@ export interface CanvasProps {
   cleanup:() => void;
   username:string;
 }
+
+interface Move {
+  selectedHouse:House;
+  action:number;
+
+}
   
 
 const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,username }) => {
 
     const [over, setOver] = useState("");
+    const [isCopied, setIsCopied] = useState(false);
+
+    const handleCopySuccess = () => {
+      setIsCopied(true);
+    };
+
+
+    console.log(room);
 
 
     const first_player = playersStates["player-1"]
@@ -61,11 +78,11 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
       
     }
 
-    const createScene = async (canvas: HTMLCanvasElement | null): Promise<{ scene: Scene | undefined, defaultSpheres: () => void }> => {
+    const createScene = async (canvas: HTMLCanvasElement | null): Promise<{ scene: Scene | undefined, defaultSpheres: () => void,moveSpheres: (move:Move) => void }> => {
        
       if (!canvas) {
         // If canvas is null, return a promise with an object where scene is undefined
-        return Promise.resolve({ scene: undefined, defaultSpheres: () => {} });
+        return Promise.resolve({ scene: undefined, defaultSpheres: () => {},moveSpheres: () => {} });
       }    
       
         const engine = new Engine(canvas, true);
@@ -149,6 +166,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                   });
                 }
 
+
         // const modelsPromise = (async () => await SceneLoader.ImportMeshAsync('', './models/', 'board.gltf'))();
 
         // Function to add a small sphere inside the clicked mesh
@@ -199,6 +217,111 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
             return newPosition;
           }
+
+
+          
+          const moveSpheres = (move: Move)  => {
+
+            console.log("oppent made a move", move);
+
+            const house = houses[housesToAccess[move.selectedHouse.houseNumber - 1]]
+
+            console.log(house);
+
+            if (move.action===0){
+              house.seedsNumber = 0;
+
+              // console.log(`House ${house.houseNumber}: Position - x: ${clickedMesh.position.x}, y: ${clickedMesh.position.y}, z: ${clickedMesh.position.z}, Seed: ${house.seedNumber}`);
+            
+              // console.log("number of picked seeds", numberOfSeedsPicked);
+
+               const seeds = house.seeds;
+
+               console.log("the seeds",seeds);
+
+               seeds.forEach((seed) => {
+                 // Find the sphere in the addedSpheres array by name
+                
+                 const sphere = addedSpheres.find(s => s.name === seed.seedName);
+
+                 console.log(sphere);
+               
+                 console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
+               
+                 if (sphere) {
+                   console.log(`Disposing of sphere with name '${seed.seedName}'`);
+                   sphere.dispose();
+                   // Remove the disposed sphere from the addedSpheres array
+                   const index = addedSpheres.indexOf(sphere);
+                   if (index !== -1) {
+                     addedSpheres.splice(index, 1);
+                   }
+                 } else {
+                   console.log(`Sphere not found with name '${seed.seedName}'`);
+                 }
+               });
+               
+               state.onHand = house.seeds
+
+               house.seeds = [];
+
+               state.previouseHouse = state.nextHouse;
+
+               const nextMove = () : string => {
+                  
+                   const indexOfCurrentHouse = housesToAccess.indexOf(housesToAccess[move.selectedHouse.houseNumber - 1]);
+
+                   const indexOfNextHouse = indexOfCurrentHouse < 11 ? indexOfCurrentHouse + 1 : 0;
+
+                   const house = housesToAccess[indexOfNextHouse];
+
+                   return house;
+               }
+
+
+               state.nextHouse = nextMove();
+               state.originalHouse = housesToAccess[move.selectedHouse.houseNumber - 1];
+
+            }else{
+              const meshClicked =  meshes.find((model) => model.id === housesToAccess[house.houseNumber-1]);
+              if(meshClicked){
+
+                house.seedsNumber +=1;
+                //numberOfSeedsPicked -= 1;
+
+
+                addSphereInsideMesh(meshClicked,state.onHand[0].seedName);
+
+                house.seeds.push(state.onHand[0]);
+                state.onHand.splice(0, 1);
+
+                state.previouseHouse = state.nextHouse;
+
+                
+
+                const nextMove = () : string => {
+                   
+                    const indexOfCurrentHouse = housesToAccess.indexOf(meshClicked.name);
+
+                    const indexOfNextHouse = indexOfCurrentHouse < 11 ? indexOfCurrentHouse + 1 : 0;
+
+                    const house = housesToAccess[indexOfNextHouse];
+
+                    return house;
+                }
+
+                state.nextHouse = nextMove();
+                state.originalHouse = meshClicked.name;
+
+                const move: Move = {
+
+                  selectedHouse:house,
+                  action:1,
+  
+                };
+              }
+            }
+        }
 
       // Function to check for collisions with existing spheres
       function checkSphereCollisions(newSphere: Mesh): boolean {
@@ -319,6 +442,22 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                 //console.log("Remaining seeds ", house.seeds);
 
+
+              const move: Move = {
+
+                selectedHouse:house,
+                action:0,
+
+              };
+
+              // illegal move
+              if (move === null) return false;
+          
+              socket.emit("move", { // <- 3 emit a move event.
+                move,
+                room,
+              }); // this event will be transmitted to the opponent via the server
+
              
               } else {
                 console.warn("House not found for clicked mesh: " + clickedMesh.name);
@@ -359,6 +498,22 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                 state.nextHouse = nextMove();
                 state.originalHouse = clickedMesh.name;
 
+                const move: Move = {
+
+                  selectedHouse:house,
+                  action:1,
+  
+                };
+
+                // illegal move
+                if (move === null) return false;
+            
+                socket.emit("move", { // <- 3 emit a move event.
+                  move,
+                  room,
+                }); // this event will be transmitted to the opponent via the server
+
+
 
                 //console.log(`House ${house.houseNumber}: Position - x: ${clickedMesh.position.x}, y: ${clickedMesh.position.y}, z: ${clickedMesh.position.z}, Seed: ${house.seedNumber}`);
               } else {
@@ -387,22 +542,30 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         // ball.material = CreateBallMaterial(scene);
 
       
-        return {scene, defaultSpheres};
+        return {scene, defaultSpheres,moveSpheres};
       };
 
-
+ 
       const canvasRef = useRef<HTMLCanvasElement>(null);
+      const [scene, setScene] = useState<Scene | undefined>(undefined);
+      const [makeAMove, setMakeAMove] = useState<(move: Move) => void>(() => {});
+    
 
       useEffect(() => {
         const loadScene = async (): Promise<() => void> => {
-          const {scene, defaultSpheres} = await createScene(canvasRef.current);
+          const {scene:sceneCreated, defaultSpheres,moveSpheres: sceneMoveSpheres} = await createScene(canvasRef.current);
           defaultSpheres();
           
           // Optionally, you can handle the scene instance or perform additional actions here
+
+          if (sceneCreated) {
+            setScene(sceneCreated);
+            setMakeAMove(() =>  sceneMoveSpheres);
+          }
           
           return () => {
-            if (scene) {
-              scene.dispose(); // Clean up the scene when the component unmounts
+            if (sceneCreated) {
+              sceneCreated.dispose(); // Clean up the scene when the component unmounts
             }
           };
         };
@@ -414,7 +577,19 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         };
       }, []);
 
-
+      
+      useEffect(() => {
+        if (scene) {
+          socket.on("move", (move) => {
+            makeAMove(move);
+          });
+        }
+    
+        return () => {
+          // Clean up the socket event listener when the component unmounts
+          socket.off("move");
+        };
+      }, [scene, makeAMove]);
 
   return (
     <>
@@ -438,6 +613,13 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                   </Grid>
                   <Grid item>
                     <Typography variant="body1" color={'whitesmoke'}>Waiting for opponent</Typography>
+                  </Grid>
+                  <Grid item>
+                  <CopyToClipboard text={room} onCopy={handleCopySuccess}>
+                    <Button color="primary">
+                      {isCopied ? 'Copied!' : 'Copy Room Id to Clipboard'}
+                    </Button>
+                  </CopyToClipboard>
                   </Grid>
                 </Grid>
                   ) : (
