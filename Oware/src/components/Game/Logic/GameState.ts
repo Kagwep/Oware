@@ -5,11 +5,11 @@ import { Seeds } from "./Seed";
 export type GameState = {
     username:string;
     previouseHouse:string;
-    nextHouse:string;
+    nextHouse:string[];
     onHand: Seeds;
     inPlay: Seeds;
     captured: Seeds;
-    originalHouse:string;
+    originalHouse:string[];
     room:string;
     validHouses:string[]
 
@@ -19,11 +19,11 @@ export const state: GameState = {
     username:"",
     room:"",
     previouseHouse:"",
-    nextHouse:"house-6",
+    nextHouse:[],
     onHand: [],
     inPlay: [],
     captured: [],
-    originalHouse:"",
+    originalHouse:[],
     validHouses:[]
 };
 
@@ -36,11 +36,11 @@ export const playersStates: PlayerState = {
         username:"",
         room:"",
         previouseHouse:"",
-        nextHouse:"house-6",
+        nextHouse:[],
         onHand: [],
         inPlay: [],
         captured: [],
-        originalHouse:"",
+        originalHouse:[],
         validHouses:[]
     },
 
@@ -48,11 +48,11 @@ export const playersStates: PlayerState = {
         username:"",
         room:"",
         previouseHouse:"",
-        nextHouse:"house-6",
+        nextHouse:[],
         onHand: [],
         inPlay: [],
         captured: [],
-        originalHouse:"",
+        originalHouse:[],
         validHouses:[]
     },
     

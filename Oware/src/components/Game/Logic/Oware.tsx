@@ -26,17 +26,24 @@ import { state,playersStates } from './GameState';
 import { housesToAccess } from './House';
 import sphereTexture from "../Textures/nuttexture3.avif";
 import CustomDialog from '../../Customs/CustomDialog';
-import { Card, CardContent, CircularProgress, Typography, Grid } from '@mui/material';
+import { Card, CardContent, CircularProgress, Typography, Grid ,Paper} from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import {Button} from '@mui/material';
 import socket from "../../../socket";
+import HouseIcon from '@mui/icons-material/House';
+import FlashButton from '../GameComponents/PlayersTurn';
+
 
 
 export interface Players {
   id:string;
   username:string;
+}
+export interface Identity {
+  player1:string;
+  player2:string;
 }
 
 export interface CanvasProps {
@@ -45,19 +52,118 @@ export interface CanvasProps {
   orientation:string;
   cleanup:() => void;
   username:string;
+  player_identity:string;
 }
+
+
+export interface GameStartState {
+  turn:string;
+  opponentHouses:string[];
+}
+
 
 interface Move {
   selectedHouse:House;
   action:number;
 
 }
+
+const houseContainerStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+};
+
+const housePaperStyle: React.CSSProperties = {
+  padding: '16px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+};
+
+const houseIconStyle: React.CSSProperties = {
+  marginRight: '8px',
+};
+
+
   
 
-const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,username }) => {
+const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,username,player_identity }) => {
 
     const [over, setOver] = useState("");
     const [isCopied, setIsCopied] = useState(false);
+    const [originalHouse, setOriginalHouses] = useState<string[]>([]);
+    const [dice_rolled, setDiceRolled] = useState<boolean>(false);
+    const [playerHouses, setPlayerHouses] = useState<string[]>([])
+    const [player_turn,setPlayerTurn] = useState<string>("")
+    
+
+    console.log(player_identity);
+
+    const dieRef = useRef<HTMLOListElement>(null);
+
+    const toggleClasses = (die: HTMLOListElement) => {
+      die.classList.toggle('odd-roll');
+      die.classList.toggle('even-roll');
+    };
+  
+    const getRandomNumber = (min: number, max: number): number => {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+  
+    const rollDice = () => {
+      if (dieRef.current) {
+        toggleClasses(dieRef.current);
+        const randomNumber = getRandomNumber(1, 6);
+        dieRef.current.dataset.roll = randomNumber.toString();
+        if(randomNumber < 4){
+          setPlayerHouses(housesToAccess.slice(0,6));
+       
+          // illegal move
+
+          const gameStartState = {
+            turn:'player-1',
+            opponentHouses:housesToAccess.slice(6,12)
+          }
+      
+          socket.emit("gameStartState", { // <- 3 emit a move event.
+            gameStartState,
+            room,
+          }); // this event will be transmitted to the opponent via the server
+
+          setPlayerTurn('player-1');
+
+        }else{
+          setPlayerHouses(housesToAccess.slice(6,12));
+  
+          // illegal move
+          setPlayerTurn('player-2');
+      
+          const gameStartState = {
+            turn:'player-2',
+            opponentHouses:housesToAccess.slice(0,6)
+          }
+      
+          socket.emit("gameStartState", { // <- 3 emit a move event.
+            gameStartState,
+            room,
+          }); // this event will be transmitted to the opponent via the server
+          
+        }
+
+        setDiceRolled(true);
+    
+      }
+    };
+  
+    useEffect(() => {
+      if (dieRef.current) {
+        toggleClasses(dieRef.current);
+      }
+    }, []);
+
 
     const handleCopySuccess = () => {
       setIsCopied(true);
@@ -67,12 +173,22 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
     console.log(room);
 
 
-    const first_player = playersStates["player-1"]
-    const second_player = playersStates["player-2"]
+
 
     const isWaitingForOpponent = !(players[0] && Object.keys(players[0]).length !== 0 && players[1] && Object.keys(players[1]).length !== 0);
 
-    if (isWaitingForOpponent){
+    if (!isWaitingForOpponent){
+
+      const first_player = playersStates["player-1"];
+      const second_player = playersStates["player-2"];
+      first_player.username = players[0].username;
+      first_player.room = room;
+      first_player.nextHouse=housesToAccess.slice(0,7);
+      second_player.username = players[0].username;
+      second_player.room = room;
+      second_player.nextHouse=housesToAccess.slice(7,12);
+      
+      
       
     }else{
       
@@ -136,7 +252,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         const addedSpheres: Mesh[] = [];
         let sphere_count: number  = 1;
 
-        const housesToAccess = ['house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'house-9', 'house-10', 'house-11', 'house-12'];
+        //const housesToAccess = ['house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'house-9', 'house-10', 'house-11', 'house-12'];
 
 
           const defaultSpheres = () : void => {
@@ -260,14 +376,16 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                    console.log(`Sphere not found with name '${seed.seedName}'`);
                  }
                });
+
+               const player = playersStates[player_identity]
                
-               state.onHand = house.seeds
+               player.onHand = house.seeds
 
                house.seeds = [];
 
-               state.previouseHouse = state.nextHouse;
+               player.previouseHouse = state.nextHouse[0];
 
-               const nextMove = () : string => {
+               const nextMove = () : string[] => {
                   
                    const indexOfCurrentHouse = housesToAccess.indexOf(housesToAccess[move.selectedHouse.houseNumber - 1]);
 
@@ -275,12 +393,12 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                    const house = housesToAccess[indexOfNextHouse];
 
-                   return house;
+                   return [house];
                }
 
 
-               state.nextHouse = nextMove();
-               state.originalHouse = housesToAccess[move.selectedHouse.houseNumber - 1];
+               player.nextHouse = nextMove();
+               player.originalHouse = [housesToAccess[move.selectedHouse.houseNumber - 1]];
 
             }else{
               const meshClicked =  meshes.find((model) => model.id === housesToAccess[house.houseNumber-1]);
@@ -288,18 +406,19 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                 house.seedsNumber +=1;
                 //numberOfSeedsPicked -= 1;
+                const player = playersStates[player_identity]
 
 
-                addSphereInsideMesh(meshClicked,state.onHand[0].seedName);
+                addSphereInsideMesh(meshClicked,player.onHand[0].seedName);
 
-                house.seeds.push(state.onHand[0]);
-                state.onHand.splice(0, 1);
+                house.seeds.push(player.onHand[0]);
+                player.onHand.splice(0, 1);
 
-                state.previouseHouse = state.nextHouse;
+                player.previouseHouse = player.nextHouse[0];
 
                 
 
-                const nextMove = () : string => {
+                const nextMove = () : string[] => {
                    
                     const indexOfCurrentHouse = housesToAccess.indexOf(meshClicked.name);
 
@@ -307,18 +426,13 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                     const house = housesToAccess[indexOfNextHouse];
 
-                    return house;
+                    return [house];
                 }
 
-                state.nextHouse = nextMove();
-                state.originalHouse = meshClicked.name;
+                player.nextHouse = nextMove();
+                player.originalHouse = [meshClicked.name];
 
-                const move: Move = {
 
-                  selectedHouse:house,
-                  action:1,
-  
-                };
               }
             }
         }
@@ -342,11 +456,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
       //   const house = houses[houseSelected];
 
-
-
       // }
-
-
 
       function applyRandomDeformities(mesh: Mesh, strength: number) {
         const positions = mesh.getVerticesData(VertexBuffer.PositionKind) as Float32Array;
@@ -378,8 +488,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
               const clickedMesh: AbstractMesh = pickResult.pickedMesh;
               const house = houses[clickedMesh.name];
 
-              const isValidMove = clickedMesh.name === state.nextHouse;
-              const isOrginalHouse = clickedMesh.name === state.originalHouse;
+              const isValidMove = clickedMesh.name === state.nextHouse[0];
+              const isOrginalHouse = clickedMesh.name === state.originalHouse[0];
 
               if (house && isValidMove && !isOrginalHouse) {
 
@@ -423,9 +533,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                 house.seeds = [];
 
-                state.previouseHouse = state.nextHouse;
+                state.previouseHouse = state.nextHouse[0];
 
-                const nextMove = () : string => {
+                const nextMove = () : string[] => {
                    
                     const indexOfCurrentHouse = housesToAccess.indexOf(clickedMesh.name);
 
@@ -433,12 +543,12 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                     const house = housesToAccess[indexOfNextHouse];
 
-                    return house;
+                    return [house];
                 }
 
 
                 state.nextHouse = nextMove();
-                state.originalHouse = clickedMesh.name;
+                state.originalHouse = [clickedMesh.name];
 
                 //console.log("Remaining seeds ", house.seeds);
 
@@ -466,7 +576,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
               // Find the corresponding house in the houses object
               const clickedMesh: AbstractMesh = pickResult.pickedMesh;
               const house = houses[clickedMesh.name];
-              const isValidMove = clickedMesh.name === state.nextHouse;
+              const isValidMove = clickedMesh.name === state.nextHouse[0];
 
               if (house && isValidMove) {
                 // Print the position and seed number of the corresponding house
@@ -481,9 +591,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                 house.seeds.push(state.onHand[0]);
                 state.onHand.splice(0, 1);
 
-                state.previouseHouse = state.nextHouse;
+                state.previouseHouse = state.nextHouse[0];
 
-                const nextMove = () : string => {
+                const nextMove = () : string[] => {
                    
                     const indexOfCurrentHouse = housesToAccess.indexOf(clickedMesh.name);
 
@@ -491,12 +601,12 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                     const house = housesToAccess[indexOfNextHouse];
 
-                    return house;
+                    return [house];
                 }
 
 
                 state.nextHouse = nextMove();
-                state.originalHouse = clickedMesh.name;
+                state.originalHouse = [clickedMesh.name];
 
                 const move: Move = {
 
@@ -591,6 +701,15 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         };
       }, [scene, makeAMove]);
 
+
+      useEffect(() => {
+        socket.on("gameStartState", (gameStartState) => {
+          setPlayerHouses(gameStartState.opponentHouses); //
+          setDiceRolled(true);
+          setPlayerTurn(gameStartState.turn)
+        });
+      }, [setPlayerHouses,setDiceRolled]);
+
   return (
     <>
         <div className='m-5'>
@@ -604,8 +723,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
               borderRadius: '16px 16px 0 0'
             }}>
             <CardContent>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item>
+              <Grid container spacing={4} alignItems="center">
+                <Grid item width={'100%'}>
                   {isWaitingForOpponent ? (
                   <Grid container alignItems="center" spacing={1}>
                   <Grid item>
@@ -639,21 +758,70 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                       }}>Opponent: <span className='text-sky-500 px-1'>{players[0].username}</span></Typography>
                     </div>
                   </Grid>
-                  <Grid item>
-                    <div>
-                      <Typography variant="body1" color={'white'} sx={{
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>Moves Left:<span className='text-sky-500 px-1'> </span></Typography>
-                      <Typography variant="body1" color={'white'} sx={{
-                        display: 'flex',
-                        alignItems: 'center'
-                      }}>Turn:  <span className='text-sky-500 px-1'></span></Typography>
-                    </div>
-                  </Grid>
-                  <Grid item>
-                    <ArrowForwardIcon color={'primary'} />
-                  </Grid>
+                      { !dice_rolled ? (
+                        <Grid item>
+                        <div className="dice">
+                              <ol className="die-list even-roll" data-roll="1" id="die-1" ref={dieRef}>
+                                <li className="die-item" data-side="1">
+                                  <span className="dot"></span>
+                                </li>
+                                <li className="die-item" data-side="2">
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                </li>
+                                <li className="die-item" data-side="3">
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                </li>
+                                <li className="die-item" data-side="4">
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                </li>
+                                <li className="die-item" data-side="5">
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                </li>
+                                <li className="die-item" data-side="6">
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                  <span className="dot"></span>
+                                </li>
+                              </ol>
+                            </div>
+                            <Button variant='contained' id="roll-button" onClick={rollDice}>
+                              Roll Dice
+                            </Button>
+                    </Grid>
+                      ):(
+                        <>
+                            <Typography variant="body1">
+                              <ArrowForwardIcon fontSize="small" /> Moves Remaining: 
+                            </Typography>
+                          <Grid container spacing={2} sx={{margin:'auto',textAlign:'center',alignItems:"center",position:'center'}} columns={16}>
+                            {playerHouses.map((houseName, index) => (
+                              <Grid item xs={6} sm={2} md={2} lg={2} key={index}>
+                                <Paper elevation={3} sx={{padding:1}} >
+                                  <HouseIcon />
+                                  <Typography variant="h6">{houseName}</Typography>
+                                </Paper>
+                              </Grid>
+                            ))}
+                          </Grid>
+                          <div className="player mt-3">
+                          <FlashButton btnText={player_identity === player_turn ? "Its your Turn " : `${player_turn}'s turn`} />
+                          </div>
+                          
+                        </>
+                      )}
                   </>
                   )}
 

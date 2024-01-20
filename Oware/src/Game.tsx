@@ -5,6 +5,7 @@ import socket from './socket';
 import CustomDialog from "./components/Customs/CustomDialog";
 import InitGame from "./InitGame";
 import { Players } from "./components/Game/Logic/Oware";
+import { Identity } from "./components/Game/Logic/Oware";
 
 function Game() {
 
@@ -14,12 +15,15 @@ function Game() {
     const [room, setRoom] = useState("");
     const [orientation, setOrientation] = useState("");
     const [players, setPlayers] = useState<Players[]>([]);
+    const [players_identity, setPlayersIdentity] = useState<string>("");
+
   
     // resets the states responsible for initializing a game
     const cleanup = useCallback(() => {
       setRoom("");
       setOrientation("");
       setPlayers([]);
+      setPlayersIdentity("");
     }, []);
   
     useEffect(() => {
@@ -66,6 +70,7 @@ function Game() {
               orientation={orientation}
               username={username}
               players={players}
+              player_identity={players_identity}
               // the cleanup function will be used by Game to reset the state when a game is over
               cleanup={cleanup}
             />
@@ -74,6 +79,7 @@ function Game() {
               setRoom={setRoom}
               setOrientation={setOrientation}
               setPlayers={setPlayers}
+              setPlayersIdentity={setPlayersIdentity}
             />
           )}
         </>

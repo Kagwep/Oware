@@ -3,6 +3,7 @@ import React,{ useState } from "react";
 import CustomDialog from "./components/Customs/CustomDialog";
 import socket from './socket';
 import { Players } from "./components/Game/Logic/Oware";
+import { Identity } from "./components/Game/Logic/Oware";
 
 
 export interface ServerJoinRoomResponse {
@@ -17,10 +18,11 @@ export interface InitGameProps {
     setRoom:React.Dispatch<React.SetStateAction<string>>;
     setOrientation:React.Dispatch<React.SetStateAction<string>>;
     setPlayers:React.Dispatch<React.SetStateAction<Players[]>>;
+    setPlayersIdentity:React.Dispatch<React.SetStateAction<string>>;
     
 }
 
-const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers }) => {
+const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers,setPlayersIdentity }) => {
 
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [roomInput, setRoomInput] = useState(''); // input state
@@ -32,6 +34,8 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
     socket.emit("createRoom", (r: React.SetStateAction<string>) => {
       console.log(r);
       setRoom(r);
+      setOrientation("white");
+      setPlayersIdentity('player-1')
 
     });
   };
@@ -60,6 +64,7 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
               setPlayers(r?.players); // set players array to the array of players in the room
               setOrientation("black"); // set orientation as black
               setRoomDialogOpen(false); // close dialog
+              setPlayersIdentity('player-2')
             });
           }}
       >
@@ -82,7 +87,8 @@ const InitGame: React.FC<InitGameProps> = ({ setRoom, setOrientation, setPlayers
       {/* Button for starting a game */}
       <Button
         variant="contained"
-        onClick={handleCreateRoom}
+        onClick={handleCreateRoom
+        }
       >
         Start a game
       </Button>
