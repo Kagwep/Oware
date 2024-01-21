@@ -58,3 +58,22 @@ export const playersStates: PlayerState = {
     
     
 }
+
+
+export const playerT:string = "";
+
+export interface theStartState {
+    inprogress: boolean;
+    start:boolean;
+    ended:boolean;
+    player:string;
+}
+
+export const start:theStartState = {
+    inprogress: false,
+    start:true,
+    ended:false,
+    player:'',
+}
+
+export const movements:string[] = [];

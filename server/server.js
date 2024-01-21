@@ -104,6 +104,11 @@ io.on('connection', (socket) => {
       socket.to(data.room).emit('gameStartState', data.gameStartState);
     });
 
+    socket.on('turnChange', (data) => {
+      // emit to all sockets in the room except the emitting socket.
+      socket.to(data.room).emit('turnChange', data.turnChange);
+    });
+
     socket.on("disconnect", () => {
       const gameRooms = Array.from(rooms.values()); // <- 1
   

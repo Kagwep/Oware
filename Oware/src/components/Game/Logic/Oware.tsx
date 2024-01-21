@@ -16,12 +16,17 @@ import {
     PhysicsImpostor,
     VertexBuffer,
     ArcRotateCamera,
-    CubeTexture
+    CubeTexture,
+    ActionManager,
+    ExecuteCodeAction,
+    DynamicTexture,
+    Color3,
+    
   } from "@babylonjs/core";
 import './style.css';
 import '@babylonjs/loaders';
 import {House, houses} from './House';
-import { seeds } from './Seed';
+import { Seed, seeds,Seeds } from './Seed';
 import { state,playersStates } from './GameState';
 import { housesToAccess } from './House';
 import sphereTexture from "../Textures/nuttexture3.avif";
@@ -34,7 +39,9 @@ import {Button} from '@mui/material';
 import socket from "../../../socket";
 import HouseIcon from '@mui/icons-material/House';
 import FlashButton from '../GameComponents/PlayersTurn';
-
+import { usePlayerTurn } from '../GameComponents/PlayerTurn';
+import * as GUI from 'babylonjs-gui';
+import { start } from './GameState';
 
 
 export interface Players {
@@ -64,7 +71,10 @@ export interface GameStartState {
 
 interface Move {
   selectedHouse:House;
+  seedAdd:Seeds;
+  player:string;
   action:number;
+  progress:boolean;
 
 }
 
@@ -94,75 +104,18 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
     const [isCopied, setIsCopied] = useState(false);
     const [originalHouse, setOriginalHouses] = useState<string[]>([]);
     const [dice_rolled, setDiceRolled] = useState<boolean>(false);
-    const [playerHouses, setPlayerHouses] = useState<string[]>([])
-    const [player_turn,setPlayerTurn] = useState<string>("")
+    const [playerHouses, setPlayerHouses] = useState<string[]>([]);
+    const [inProgress, setInProgress] = useState<boolean>(false);
+    const [playerTurn, setPlayerTurn] = useState<string>("");
+
+
+    let playerT = "";
     
 
-    console.log(player_identity);
+    //console.log(player_identity);
 
-    const dieRef = useRef<HTMLOListElement>(null);
 
-    const toggleClasses = (die: HTMLOListElement) => {
-      die.classList.toggle('odd-roll');
-      die.classList.toggle('even-roll');
-    };
-  
-    const getRandomNumber = (min: number, max: number): number => {
-      min = Math.ceil(min);
-      max = Math.floor(max);
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    };
-  
-    const rollDice = () => {
-      if (dieRef.current) {
-        toggleClasses(dieRef.current);
-        const randomNumber = getRandomNumber(1, 6);
-        dieRef.current.dataset.roll = randomNumber.toString();
-        if(randomNumber < 4){
-          setPlayerHouses(housesToAccess.slice(0,6));
-       
-          // illegal move
 
-          const gameStartState = {
-            turn:'player-1',
-            opponentHouses:housesToAccess.slice(6,12)
-          }
-      
-          socket.emit("gameStartState", { // <- 3 emit a move event.
-            gameStartState,
-            room,
-          }); // this event will be transmitted to the opponent via the server
-
-          setPlayerTurn('player-1');
-
-        }else{
-          setPlayerHouses(housesToAccess.slice(6,12));
-  
-          // illegal move
-          setPlayerTurn('player-2');
-      
-          const gameStartState = {
-            turn:'player-2',
-            opponentHouses:housesToAccess.slice(0,6)
-          }
-      
-          socket.emit("gameStartState", { // <- 3 emit a move event.
-            gameStartState,
-            room,
-          }); // this event will be transmitted to the opponent via the server
-          
-        }
-
-        setDiceRolled(true);
-    
-      }
-    };
-  
-    useEffect(() => {
-      if (dieRef.current) {
-        toggleClasses(dieRef.current);
-      }
-    }, []);
 
 
     const handleCopySuccess = () => {
@@ -170,39 +123,24 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
     };
 
 
-    console.log(room);
+    //console.log(room);
 
 
 
 
     const isWaitingForOpponent = !(players[0] && Object.keys(players[0]).length !== 0 && players[1] && Object.keys(players[1]).length !== 0);
 
-    if (!isWaitingForOpponent){
-
-      const first_player = playersStates["player-1"];
-      const second_player = playersStates["player-2"];
-      first_player.username = players[0].username;
-      first_player.room = room;
-      first_player.nextHouse=housesToAccess.slice(0,7);
-      second_player.username = players[0].username;
-      second_player.room = room;
-      second_player.nextHouse=housesToAccess.slice(7,12);
-      
-      
-      
-    }else{
-      
-    }
-
-    const createScene = async (canvas: HTMLCanvasElement | null): Promise<{ scene: Scene | undefined, defaultSpheres: () => void,moveSpheres: (move:Move) => void }> => {
+    const createScene = async (canvas: HTMLCanvasElement | null): Promise<{ scene: Scene | undefined, defaultSpheres: () => void,moveSpheres: (move:Move) => void,playersTurn :string}> => {
        
       if (!canvas) {
         // If canvas is null, return a promise with an object where scene is undefined
-        return Promise.resolve({ scene: undefined, defaultSpheres: () => {},moveSpheres: () => {} });
+        return Promise.resolve({ scene: undefined, defaultSpheres: () => {},moveSpheres: () => {},playersTurn:'' });
       }    
       
         const engine = new Engine(canvas, true);
         const scene = new Scene(engine);
+        let playing_next = player_identity;
+        playerT = playing_next;
 
         
       
@@ -231,6 +169,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         // })
 
         
+        
         const loadModels = async () => {
           try {
             const result = await SceneLoader.ImportMeshAsync('', './models/', 'board.gltf');
@@ -247,12 +186,33 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         const {meshes} = await loadModels();
         // Now modelsResult contains the result directly
         
-        console.log(meshes);
+       // console.log(meshes);
 
         const addedSpheres: Mesh[] = [];
         let sphere_count: number  = 1;
 
         //const housesToAccess = ['house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'house-9', 'house-10', 'house-11', 'house-12'];
+
+        
+          var box = MeshBuilder.CreateBox('box', { size: 1 }, scene);
+
+          var material = new StandardMaterial('material', scene);
+
+          console.log(player_identity,playing_next)
+          // Assuming player_identity is a boolean variable
+          if (!start.inprogress && player_identity === 'player-1') {
+              // Set the material color to green
+              material.diffuseColor = new Color3(0, 1, 0); // Green
+              material.specularColor = new Color3(1, 1, 1);
+              box.material = material;
+              
+          }
+
+          
+
+          box.position.x = 18; // Half of the box's width in the negative x direction
+          box.position.y = 10;   // Half of the box's height in the positive y direction
+          box.position.z = 2;
 
 
           const defaultSpheres = () : void => {
@@ -283,8 +243,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                 }
 
 
-        // const modelsPromise = (async () => await SceneLoader.ImportMeshAsync('', './models/', 'board.gltf'))();
 
+        
         // Function to add a small sphere inside the clicked mesh
       // Function to add a small sphere inside the clicked mesh
       function addSphereInsideMesh(mesh: AbstractMesh,seedName: string) {
@@ -335,14 +295,17 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
           }
 
 
+
+
+
           
           const moveSpheres = (move: Move)  => {
 
-            console.log("oppent made a move", move);
+            //console.log("oppent made a move", move);
 
             const house = houses[housesToAccess[move.selectedHouse.houseNumber - 1]]
 
-            console.log(house);
+          //  console.log(house);
 
             if (move.action===0){
               house.seedsNumber = 0;
@@ -353,19 +316,19 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                const seeds = house.seeds;
 
-               console.log("the seeds",seeds);
+              // console.log("the seeds",seeds);
 
                seeds.forEach((seed) => {
                  // Find the sphere in the addedSpheres array by name
                 
                  const sphere = addedSpheres.find(s => s.name === seed.seedName);
 
-                 console.log(sphere);
+                // console.log(sphere);
                
-                 console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
+                // console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
                
                  if (sphere) {
-                   console.log(`Disposing of sphere with name '${seed.seedName}'`);
+                 //  console.log(`Disposing of sphere with name '${seed.seedName}'`);
                    sphere.dispose();
                    // Remove the disposed sphere from the addedSpheres array
                    const index = addedSpheres.indexOf(sphere);
@@ -377,13 +340,13 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                  }
                });
 
-               const player = playersStates[player_identity]
+               const player = player_identity === 'player-1' ? playersStates['player-2'] : playersStates['player-1']
                
                player.onHand = house.seeds
 
                house.seeds = [];
 
-               player.previouseHouse = state.nextHouse[0];
+               player.previouseHouse = player.nextHouse[0];
 
                const nextMove = () : string[] => {
                   
@@ -399,19 +362,23 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                player.nextHouse = nextMove();
                player.originalHouse = [housesToAccess[move.selectedHouse.houseNumber - 1]];
+               playing_next = move.player;
+               start.inprogress = true;
+               setPlayerTurn(playing_next);
+               
 
-            }else{
+            }else if (move.action===1){
               const meshClicked =  meshes.find((model) => model.id === housesToAccess[house.houseNumber-1]);
               if(meshClicked){
 
                 house.seedsNumber +=1;
                 //numberOfSeedsPicked -= 1;
-                const player = playersStates[player_identity]
+                const player = player_identity === 'player-1' ? playersStates['player-2'] : playersStates['player-1']
 
 
-                addSphereInsideMesh(meshClicked,player.onHand[0].seedName);
+                addSphereInsideMesh(meshClicked,move.seedAdd[0].seedName);
 
-                house.seeds.push(player.onHand[0]);
+                house.seeds.push(move.seedAdd[0]);
                 player.onHand.splice(0, 1);
 
                 player.previouseHouse = player.nextHouse[0];
@@ -429,9 +396,27 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                     return [house];
                 }
 
-                player.nextHouse = nextMove();
-                player.originalHouse = [meshClicked.name];
+                if (player.onHand.length === 0){
 
+                  player.nextHouse= []
+                  player.originalHouse =[]
+
+                  material.diffuseColor = new Color3(0, 1, 0); // Green
+                  material.specularColor = new Color3(1, 1, 1);
+                  box.material = material;
+
+  
+                 }else{
+  
+                  player.nextHouse = nextMove();
+                  player.originalHouse = [meshClicked.name];
+  
+                 }
+
+                 playing_next = move.player;
+                 setPlayerTurn(playing_next);
+                 start.inprogress = true;
+                 start.player = move.player;
 
               }
             }
@@ -452,11 +437,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         return false; // No collision detected
       }
 
-      // const validateMove = (houseSelected: string) : boolean =>{
-
-      //   const house = houses[houseSelected];
-
-      // }
+ 
 
       function applyRandomDeformities(mesh: Mesh, strength: number) {
         const positions = mesh.getVerticesData(VertexBuffer.PositionKind) as Float32Array;
@@ -478,20 +459,40 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         // console.log(modelsPromise)
         let numberOfSeedsPicked: number = 0;
 
-        
-        
-        
           scene.onPointerDown = function (evt, pickResult) {
-            // Check if a mesh was clicked
-            if (pickResult.hit && pickResult.pickedMesh && numberOfSeedsPicked === 0) {
+             
+
+            let isPlayerTurn:boolean;
+
+            if (!start.inprogress && player_identity === 'player-1'){
+              isPlayerTurn = true;
+              start.inprogress = true;
+            }else if(start.inprogress && player_identity === playing_next){
+              isPlayerTurn = true;
+            }else{
+              isPlayerTurn = false;
+              console.log(player_identity,playing_next)
+            }
+          
+            if (pickResult.hit && pickResult.pickedMesh && playersStates[player_identity].onHand.length === 0 && isPlayerTurn) {
               // Find the corresponding house in the houses object
               const clickedMesh: AbstractMesh = pickResult.pickedMesh;
               const house = houses[clickedMesh.name];
+              const isOriginalHouseEmpty = playersStates[player_identity].originalHouse.length === 0
+              const isOrginalHouse = !isOriginalHouseEmpty && playersStates[player_identity].originalHouse[0] === clickedMesh.name;
+              const isHousePlayers = playerHouses.includes(clickedMesh.name)
+              const isNextHousesEmpty = playersStates[player_identity].nextHouse.length === 0;
+              const validHouseMove = isNextHousesEmpty ? housesToAccess[housesToAccess.indexOf(clickedMesh.name) + 1] : playersStates[player_identity].nextHouse[0];
+              const checkMove = validHouseMove === housesToAccess[housesToAccess.indexOf(clickedMesh.name)];
+              const isValidMove = isHousePlayers 
 
-              const isValidMove = clickedMesh.name === state.nextHouse[0];
-              const isOrginalHouse = clickedMesh.name === state.originalHouse[0];
+              console.log(isValidMove);
+              console.log(playerHouses,clickedMesh.name)
 
-              if (house && isValidMove && !isOrginalHouse) {
+             
+              
+
+              if (house && isValidMove && (!isOrginalHouse || isOriginalHouseEmpty)) {
 
                 //console.log(house.seeds.length)
                 // Print the position and seed number of the corresponding house
@@ -512,12 +513,12 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                  
                   const sphere = addedSpheres.find(s => s.name === seed.seedName);
 
-                  console.log(sphere);
+                //  console.log(sphere);
                 
-                  console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
-                
+                 // console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
+                      
                   if (sphere) {
-                    console.log(`Disposing of sphere with name '${seed.seedName}'`);
+                   // console.log(`Disposing of sphere with name '${seed.seedName}'`);
                     sphere.dispose();
                     // Remove the disposed sphere from the addedSpheres array
                     const index = addedSpheres.indexOf(sphere);
@@ -529,11 +530,11 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                   }
                 });
                 
-                state.onHand = house.seeds
+                playersStates[player_identity].onHand = house.seeds
 
                 house.seeds = [];
 
-                state.previouseHouse = state.nextHouse[0];
+                playersStates[player_identity].previouseHouse = state.nextHouse[0];
 
                 const nextMove = () : string[] => {
                    
@@ -543,20 +544,28 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                     const house = housesToAccess[indexOfNextHouse];
 
+                    //console.log("the house to",house);
+
                     return [house];
                 }
 
 
-                state.nextHouse = nextMove();
-                state.originalHouse = [clickedMesh.name];
+                playersStates[player_identity].nextHouse = nextMove();
+                playersStates[player_identity].originalHouse = [clickedMesh.name];
 
                 //console.log("Remaining seeds ", house.seeds);
+              // console.log(playersStates[player_identity].nextHouse)
+
+
 
 
               const move: Move = {
 
                 selectedHouse:house,
+                seedAdd:[],
+                player:player_identity,
                 action:0,
+                progress:true,
 
               };
 
@@ -572,26 +581,30 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
               } else {
                 console.warn("House not found for clicked mesh: " + clickedMesh.name);
               }
-            } else if (pickResult.hit && pickResult.pickedMesh && numberOfSeedsPicked !== 0) {
+            } else if (pickResult.hit && pickResult.pickedMesh && playersStates[player_identity].onHand.length !== 0 && isPlayerTurn) {
               // Find the corresponding house in the houses object
               const clickedMesh: AbstractMesh = pickResult.pickedMesh;
               const house = houses[clickedMesh.name];
-              const isValidMove = clickedMesh.name === state.nextHouse[0];
+              const isValidMove = clickedMesh.name === playersStates[player_identity].nextHouse[0];
+              //console.log('how?',playersStates[player_identity].nextHouse)
+              //console.log('isvalidmove',playersStates[player_identity].nextHouse[0],clickedMesh.name);
 
               if (house && isValidMove) {
                 // Print the position and seed number of the corresponding house
                 
                 house.seedsNumber +=1;
-                numberOfSeedsPicked -= 1;
+                const player = playersStates[player_identity];
 
                // console.log("remaining seed", numberOfSeedsPicked);
 
-                addSphereInsideMesh(clickedMesh,state.onHand[0].seedName);
+                addSphereInsideMesh(clickedMesh,player.onHand[0].seedName);
 
-                house.seeds.push(state.onHand[0]);
-                state.onHand.splice(0, 1);
+                const seedAdded = player.onHand[0];
 
-                state.previouseHouse = state.nextHouse[0];
+                house.seeds.push(player.onHand[0]);
+                player.onHand.splice(0, 1);
+
+                player.previouseHouse = player.nextHouse[0];
 
                 const nextMove = () : string[] => {
                    
@@ -605,13 +618,29 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                 }
 
 
-                state.nextHouse = nextMove();
-                state.originalHouse = [clickedMesh.name];
+               if (player.onHand.length === 0){
+
+                player.nextHouse= []
+                player.originalHouse =[]
+
+
+                const nextPlayer = player_identity === 'player-1' ? 'player-2' :'player-1';
+                
+                playing_next = nextPlayer;
+                start.player = playing_next ;
+                setPlayerTurn(playing_next);
+
+                material.diffuseColor = new Color3(1, 0, 0);
+                material.specularColor = new Color3(1, 1, 1);
+                box.material = material;
 
                 const move: Move = {
 
                   selectedHouse:house,
+                  seedAdd:[seedAdded],
+                  player:nextPlayer,
                   action:1,
+                  progress:true,
   
                 };
 
@@ -624,6 +653,36 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                 }); // this event will be transmitted to the opponent via the server
 
 
+               }else{
+
+                player.nextHouse = nextMove();
+                player.originalHouse = [clickedMesh.name];
+                const nextPlayer = player_identity;
+
+                playing_next = nextPlayer;
+                setPlayerTurn(playing_next);
+
+                const move: Move = {
+
+                  selectedHouse:house,
+                  seedAdd:[seedAdded],
+                  player:nextPlayer,
+                  action:1,
+                  progress:true,
+  
+                };
+
+                // illegal move
+                if (move === null) return false;
+            
+                socket.emit("move", { // <- 3 emit a move event.
+                  move,
+                  room,
+                }); // this event will be transmitted to the opponent via the server
+
+                
+
+               }
 
                 //console.log(`House ${house.houseNumber}: Position - x: ${clickedMesh.position.x}, y: ${clickedMesh.position.y}, z: ${clickedMesh.position.z}, Seed: ${house.seedNumber}`);
               } else {
@@ -651,19 +710,25 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         //ground.material = CreateGroundMaterial(scene);
         // ball.material = CreateBallMaterial(scene);
 
+        const  playersTurn: string =playing_next;
+
+        
+
       
-        return {scene, defaultSpheres,moveSpheres};
+        return {scene, defaultSpheres,moveSpheres,playersTurn};
       };
 
  
       const canvasRef = useRef<HTMLCanvasElement>(null);
       const [scene, setScene] = useState<Scene | undefined>(undefined);
       const [makeAMove, setMakeAMove] = useState<(move: Move) => void>(() => {});
+      const [player_turn, setThePlayerTurn] = useState<(playerTurn: string) => void>(() => {})
+      const sceneRef = useRef(null);
     
 
       useEffect(() => {
         const loadScene = async (): Promise<() => void> => {
-          const {scene:sceneCreated, defaultSpheres,moveSpheres: sceneMoveSpheres} = await createScene(canvasRef.current);
+          const {scene:sceneCreated, defaultSpheres,moveSpheres: sceneMoveSpheres,playersTurn:player} = await createScene(canvasRef.current);
           defaultSpheres();
           
           // Optionally, you can handle the scene instance or perform additional actions here
@@ -671,6 +736,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
           if (sceneCreated) {
             setScene(sceneCreated);
             setMakeAMove(() =>  sceneMoveSpheres);
+            setPlayerTurn(player);
+            console.log('ebu check',player);
           }
           
           return () => {
@@ -685,13 +752,16 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         return () => {
           cleanup.then(cleanupFunction => cleanupFunction());
         };
-      }, []);
+      }, [playerHouses]);
+
+
 
       
       useEffect(() => {
         if (scene) {
           socket.on("move", (move) => {
             makeAMove(move);
+            setPlayerTurn(move.player);
           });
         }
     
@@ -699,16 +769,37 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
           // Clean up the socket event listener when the component unmounts
           socket.off("move");
         };
-      }, [scene, makeAMove]);
+      }, [scene, makeAMove,playerTurn]);
 
+
+      //console.log("am available here",playerTurn);
 
       useEffect(() => {
-        socket.on("gameStartState", (gameStartState) => {
-          setPlayerHouses(gameStartState.opponentHouses); //
-          setDiceRolled(true);
-          setPlayerTurn(gameStartState.turn)
-        });
-      }, [setPlayerHouses,setDiceRolled]);
+        if (!isWaitingForOpponent && !inProgress) {
+          let newPlayerHouses, newPlayerTurn;
+    
+          if (player_identity === 'player-1') {
+            newPlayerHouses = housesToAccess.slice(0, 6);
+            newPlayerTurn = player_identity;
+          } else {
+            newPlayerHouses = housesToAccess.slice(6, 12);
+            newPlayerTurn = 'player-1';
+          }
+    
+          // Update playerHouses only if it has changed
+          if (JSON.stringify(newPlayerHouses) !== JSON.stringify(playerHouses)) {
+            setPlayerHouses(newPlayerHouses);
+          }
+    
+          // Update playerTurn only if it has changed
+          if (newPlayerTurn !== playerTurn) {
+            setPlayerTurn(newPlayerTurn);
+          }
+        }
+      }, [isWaitingForOpponent, inProgress, player_identity, housesToAccess, playerHouses, playerTurn]);
+    
+      
+
 
   return (
     <>
@@ -748,80 +839,33 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                     <div>
                       <Typography variant="h6" color={'white'} sx={{
                         display: 'flex',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        fontSize:15
                       }}>Player: <span className='text-sky-500 px-1'>{username}</span></Typography>
-                      <Typography variant="body1" color={'white'} sx={{
+                      <Typography variant="body1" color={'white'} sx={{fontSize:15
                       }}>Room: <span className='text-sky-500 px-1'>{room}</span></Typography>
                       <Typography variant="body1" color={'white'} sx={{
                         display: 'flex',
-                        alignItems: 'center'
-                      }}>Opponent: <span className='text-sky-500 px-1'>{players[0].username}</span></Typography>
+                        alignItems: 'center',
+                        fontSize:15
+                      }}>Opponent: <span className='text-orange-500 px-1 fw-bold'>{player_identity === 'player-1' ? playersStates['player-2'].username : playersStates['player-1'].username}</span></Typography>
                     </div>
                   </Grid>
-                      { !dice_rolled ? (
-                        <Grid item>
-                        <div className="dice">
-                              <ol className="die-list even-roll" data-roll="1" id="die-1" ref={dieRef}>
-                                <li className="die-item" data-side="1">
-                                  <span className="dot"></span>
-                                </li>
-                                <li className="die-item" data-side="2">
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                </li>
-                                <li className="die-item" data-side="3">
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                </li>
-                                <li className="die-item" data-side="4">
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                </li>
-                                <li className="die-item" data-side="5">
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                </li>
-                                <li className="die-item" data-side="6">
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                  <span className="dot"></span>
-                                </li>
-                              </ol>
-                            </div>
-                            <Button variant='contained' id="roll-button" onClick={rollDice}>
-                              Roll Dice
-                            </Button>
+
+                  <Typography variant="body1" color={'white'} sx={{display:'flex',fontSize:17}}>
+                      Moves Remaining: <span className='text-green-600'></span>
+                  </Typography>
+                <Grid container spacing={2} sx={{margin:'auto',textAlign:'center',alignItems:"center",position:'center'}} columns={16}>
+                  {playerHouses.map((houseName, index) => (
+                    <Grid item xs={6} sm={2} md={2} lg={2} key={index}>
+                      <Paper elevation={3} sx={{padding:1,display:'flex'}} >
+                        <HouseIcon />
+                        <Typography variant="h6">{houseName}</Typography>
+                      </Paper>
                     </Grid>
-                      ):(
-                        <>
-                            <Typography variant="body1">
-                              <ArrowForwardIcon fontSize="small" /> Moves Remaining: 
-                            </Typography>
-                          <Grid container spacing={2} sx={{margin:'auto',textAlign:'center',alignItems:"center",position:'center'}} columns={16}>
-                            {playerHouses.map((houseName, index) => (
-                              <Grid item xs={6} sm={2} md={2} lg={2} key={index}>
-                                <Paper elevation={3} sx={{padding:1}} >
-                                  <HouseIcon />
-                                  <Typography variant="h6">{houseName}</Typography>
-                                </Paper>
-                              </Grid>
-                            ))}
-                          </Grid>
-                          <div className="player mt-3">
-                          <FlashButton btnText={player_identity === player_turn ? "Its your Turn " : `${player_turn}'s turn`} />
-                          </div>
-                          
-                        </>
-                      )}
+                  ))}
+                </Grid>  
+
                   </>
                   )}
 
