@@ -1,0 +1,11 @@
+{
+  "name": "aleonoware",
+  "version": "1.0.0",
+  "description": "![Oware](https://res.cloudinary.com/duybctvku/image/upload/v1705537017/iuqrtipgfbayh9kxcwmt.jpg)",
+  "main": "server.js",
+  "scripts": {
+    "start":"node server/server.js"
+  },
+  "author": "kagwe",
+  "license": "ISC"
+}
