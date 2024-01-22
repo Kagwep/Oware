@@ -21,6 +21,7 @@ import {
     ExecuteCodeAction,
     DynamicTexture,
     Color3,
+    FlowGraphConsoleLogBlock,
     
   } from "@babylonjs/core";
 import './style.css';
@@ -143,19 +144,23 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         playerT = playing_next;
 
         
+
+        
       
-        var camera = new ArcRotateCamera("camera1", 0,  Math.PI / 2, 10, Vector3.Zero(), scene);
+        var camera = new ArcRotateCamera("camera1", 0,  0, 10, Vector3.Zero(), scene);
 
         camera.attachControl(canvas, true);
 
         camera.speed = 0.25;
 
-        camera.setPosition(new Vector3(-0.0013763740788813662, 43.32877130120143, 0.43329997049811053));
+        camera.setPosition(new Vector3(0.003763740788813662, 43.32877130120143, 9.1329997049811053));
 
-        camera.lowerAlphaLimit = camera.upperAlphaLimit = camera.alpha;
 
-        camera.lowerBetaLimit = Math.PI / 8; // Set to the desired angle in radians
-        camera.upperBetaLimit = Math.PI * 0.5; // Set to the desired angle in radians
+
+        camera.lowerAlphaLimit = camera.upperAlphaLimit = camera.alpha ;
+
+        camera.lowerBetaLimit = Math.PI / 11; // Set to the desired angle in radians
+        camera.upperBetaLimit = Math.PI * 0.8; // Set to the desired angle in radians
     
         const hemiLight = new HemisphericLight("hemiLight", new Vector3(0, 2, 0), scene);
 
@@ -170,9 +175,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
         
         
-        const loadModels = async () => {
+        const loadModels = async (modelName:string) => {
           try {
-            const result = await SceneLoader.ImportMeshAsync('', './models/', 'board.gltf');
+            const result = await SceneLoader.ImportMeshAsync('', './models/', modelName);
             // Do something with the result here
             return result; // You can return the result if needed
           } catch (error) {
@@ -183,18 +188,47 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         };
         
         // Call the function
-        const {meshes} = await loadModels();
+        const {meshes} = await loadModels('board.gltf');
+
+        let boardRootMesh = meshes.find(mesh => mesh.name === '__root__');
+
+        if (boardRootMesh) {
+          // Example: Move the root mesh to a specific position
+          boardRootMesh.position = new Vector3(5.5, 6, 0);
+      }
+
+        const {meshes:meshes_capture} = await loadModels('captur.gltf');
+        const {meshes:bulbMeshes} = await loadModels('bulb.gltf');
         // Now modelsResult contains the result directly
+        console.log(meshes_capture);
+       
+
+        const rootMesh = meshes_capture.find(mesh => mesh.name === '__root__');
+
+        const bulb = bulbMeshes.find(mesh => mesh.name === 'bulb');
+
+        if (bulb) {
+          console.log('here is the bulb',bulb);
+        }else{
+          console.log('bulb not found')
+        }
+
+        if (rootMesh) {
+          // Example: Move the root mesh to a specific position
+          rootMesh.position = new Vector3(-22.5, 9, 0);
+      }
         
        // console.log(meshes);
 
         const addedSpheres: Mesh[] = [];
+        const capturedSpheres: Mesh[] = [];
+
         let sphere_count: number  = 1;
 
         //const housesToAccess = ['house-1', 'house-2', 'house-3', 'house-4', 'house-5', 'house-6', 'house-7', 'house-8', 'house-9', 'house-10', 'house-11', 'house-12'];
 
         
-          var box = MeshBuilder.CreateBox('box', { size: 1 }, scene);
+          // var box = MeshBuilder.CreateBox('box', { size: 1 }, scene);
 
           var material = new StandardMaterial('material', scene);
 
@@ -204,15 +238,27 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
               // Set the material color to green
               material.diffuseColor = new Color3(0, 1, 0); // Green
               material.specularColor = new Color3(1, 1, 1);
-              box.material = material;
+              // box.material = material;
+
+              if (bulb){
+                bulb.material = material;
+              }
               
           }
 
           
 
-          box.position.x = 18; // Half of the box's width in the negative x direction
-          box.position.y = 10;   // Half of the box's height in the positive y direction
-          box.position.z = 2;
+          // box.position.x = 22.5; // Half of the box's width in the negative x direction
+          // box.position.y = 15;   // Half of the box's height in the positive y direction
+          // box.position.z = 2;
+
+          const bulbRootMesh = bulbMeshes.find(mesh => mesh.name === '__root__');
+
+          if (bulbRootMesh) {
+            // Example: Move the root mesh to a specific position
+            bulbRootMesh.position = new Vector3(22.5, 15, 0);
+        }
+          
 
 
           const defaultSpheres = () : void => {
@@ -233,7 +279,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                      const houseSeeds = house.seeds;
 
                      houseSeeds.forEach((seed) => {
-                        addSphereInsideMesh(mesh,seed.seedName);
+                        addSphereInsideMesh(mesh,seed.seedName,false,true);
                      })
                       
                       // Additional logic if needed
@@ -247,13 +293,31 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         
         // Function to add a small sphere inside the clicked mesh
       // Function to add a small sphere inside the clicked mesh
-      function addSphereInsideMesh(mesh: AbstractMesh,seedName: string) {
+      function addSphereInsideMesh(mesh: AbstractMesh,seedName: string,capture:boolean = false,isDefault:boolean=false) {
         // Create a new sphere with MeshBuilder
         const newSphere = MeshBuilder.CreateSphere(seedName, { diameter: 1 }, scene); // Adjust the diameter as needed
 
+        let sphereADefault: boolean = false;
         // Compute the center of the clicked mesh's bounding box in world space
-        const boundingBoxCenter = mesh.getBoundingInfo().boundingBox.centerWorld;
-        newSphere.position.copyFrom(boundingBoxCenter);
+        const boundingBoxCenter =  () : Vector3 => {
+
+          if (isDefault){
+            if(boardRootMesh){
+              const offset = boardRootMesh.position.clone();
+              const boundingBoxCenter = mesh.getBoundingInfo().boundingBox.centerWorld;
+              const resultantVector = boundingBoxCenter.add(offset);
+              sphereADefault = true;
+              return resultantVector
+            }else {
+              sphereADefault = true;
+              return mesh.getBoundingInfo().boundingBox.centerWorld;
+            }
+          }else{
+            return mesh.getBoundingInfo().boundingBox.centerWorld;
+          }   
+        } 
+
+        newSphere.position.copyFrom(boundingBoxCenter());
         newSphere.isPickable = false;
         // applyRandomDeformities(newSphere, 6);
 
@@ -264,32 +328,61 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         newSphere.material = sphereMaterial;
 
         // Check for collisions with previously added spheres
-        if (checkSphereCollisions(newSphere)) {
+        if (checkSphereCollisions(newSphere, mesh.name === 'capture-house' ? true : false)) {
           // If collision detected, calculate a new position
-          const newPosition = calculateNewSpherePosition(mesh);
+          const newPosition = calculateNewSpherePosition(mesh,sphereADefault);
           newSphere.position.copyFrom(newPosition);
           newSphere.isPickable = false;
         } 
-        
+
+       if (!capture){
         addedSpheres.push(newSphere);
+       } else{
+        capturedSpheres.push(newSphere);
+        
+       }
+      
       }
 
           // Function to calculate a new position for the sphere in case of collision
-          function calculateNewSpherePosition(mesh: AbstractMesh): Vector3 {
+          function calculateNewSpherePosition(mesh: AbstractMesh,isDefaultSphere = false): Vector3 {
             // Get the center of the clicked mesh's bounding box in world space
-            const boundingBoxCenter = mesh.getBoundingInfo().boundingBox.centerWorld;
+            //const boundingBoxCenter = mesh.getBoundingInfo().boundingBox.centerWorld;
+
+            const boundingBoxCenter =  () : Vector3 => {
+
+              if (isDefaultSphere){
+                if(boardRootMesh){
+                  const offset = boardRootMesh.position.clone();
+                  const boundingBoxCenter = mesh.getBoundingInfo().boundingBox.centerWorld;
+                  const resultantVector = boundingBoxCenter.add(offset);
+                  return resultantVector
+                }else {
+
+                  return mesh.getBoundingInfo().boundingBox.centerWorld;
+                }
+              }else{
+                return mesh.getBoundingInfo().boundingBox.centerWorld;
+              }   
+            }
 
             // Calculate random offsets for X, Y, and Z directions
             const xOffset = (Math.random() - 0.5) * 2.4; // Adjust the range of X offset as needed
             const yOffset = (Math.random() - 0.5) * 1.4; // Adjust the range of Y offset as needed
             const zOffset = (Math.random() - 0.5) * 2.6; // Adjust the range of Z offset as needed
 
+            const boundingBoxCenterResult = boundingBoxCenter()
+
             // Apply the random offsets to the bounding box center
             const newPosition = new Vector3(
-              boundingBoxCenter.x + xOffset,
-              boundingBoxCenter.y + yOffset,
-              boundingBoxCenter.z + zOffset
+              boundingBoxCenterResult.x + xOffset,
+              boundingBoxCenterResult.y + yOffset,
+              boundingBoxCenterResult.z + zOffset
             );
+
+            if (mesh.name === 'capture-house'){
+              console.log("new position sphere", newPosition);
+            }
 
             return newPosition;
           }
@@ -403,7 +496,45 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                   material.diffuseColor = new Color3(0, 1, 0); // Green
                   material.specularColor = new Color3(1, 1, 1);
-                  box.material = material;
+                  // box.material = material;
+                  if (bulb){
+                    bulb.material = material;
+                  }
+
+                  const isPlayeerHouse =  playerHouses.includes(meshClicked.name);
+
+                  if (isPlayeerHouse && (house.seeds.length === 2 || house.seeds.length === 3)){
+
+                    const seeds = house.seeds;
+  
+                    seeds.forEach((seed) => {
+                      // Find the sphere in the addedSpheres array by name
+                     
+                      const sphere = addedSpheres.find(s => s.name === seed.seedName);
+    
+                    //  console.log(sphere);
+                    
+                     // console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
+                          
+                      if (sphere) {
+                       // console.log(`Disposing of sphere with name '${seed.seedName}'`);
+
+                        sphere.dispose();
+  
+                        if (capturedSpheres.length > 24){
+                          console.log(" You are the winner!!!")
+                        }
+                        // Remove the disposed sphere from the addedSpheres array
+                        const index = addedSpheres.indexOf(sphere);
+                        if (index !== -1) {
+                          addedSpheres.splice(index, 1);
+                        }
+                      } else {
+                        console.log(`Sphere not found with name '${seed.seedName}'`);
+                      }
+                    });
+  
+                  }
 
   
                  }else{
@@ -423,8 +554,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         }
 
       // Function to check for collisions with existing spheres
-      function checkSphereCollisions(newSphere: Mesh): boolean {
-        for (const existingSphere of addedSpheres) {
+      function checkSphereCollisions(newSphere: Mesh,capture: boolean = false): boolean {
+        const meshToCheck = !capture ? addedSpheres : capturedSpheres;
+        for (const existingSphere of meshToCheck) {
           // Calculate the distance between the centers of the spheres
           const distance = Vector3.Distance(existingSphere.position, newSphere.position);
 
@@ -632,7 +764,53 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                 material.diffuseColor = new Color3(1, 0, 0);
                 material.specularColor = new Color3(1, 1, 1);
-                box.material = material;
+                // box.material = material;
+                if (bulb){
+                  bulb.material = material;
+                }
+
+                const isPlayeerHouse =  playerHouses.includes(clickedMesh.name);
+
+                if (!isPlayeerHouse && (house.seeds.length === 2 || house.seeds.length === 3)){
+
+                  const seeds = house.seeds;
+                  const captureMesh = meshes_capture.find(mesh => mesh.name === 'capture-house');
+
+                  seeds.forEach((seed) => {
+                    // Find the sphere in the addedSpheres array by name
+                   
+                    const sphere = addedSpheres.find(s => s.name === seed.seedName);
+  
+                  //  console.log(sphere);
+                  
+                   // console.log(`Attempt to dispose of sphere with name '${seed.seedName}':`, sphere);
+                        
+                    if (sphere && captureMesh) {
+                     // console.log(`Disposing of sphere with name '${seed.seedName}'`);
+                     //const theSphere = sphere;
+                     capturedSpheres.push(sphere);
+
+                     console.log("The captured",capturedSpheres.length)
+                      
+                      
+                      sphere.dispose();
+
+                      addSphereInsideMesh(captureMesh,seed.seedName,true);
+
+                      if (capturedSpheres.length > 24){
+                        console.log(" You are the winner!!!")
+                      }
+                      // Remove the disposed sphere from the addedSpheres array
+                      const index = addedSpheres.indexOf(sphere);
+                      if (index !== -1) {
+                        addedSpheres.splice(index, 1);
+                      }
+                    } else {
+                      console.log(`Sphere not found with name '${seed.seedName}'`);
+                    }
+                  });
+
+                }
 
                 const move: Move = {
 
@@ -661,6 +839,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
 
                 playing_next = nextPlayer;
                 setPlayerTurn(playing_next);
+
+
+
 
                 const move: Move = {
 
@@ -844,17 +1025,9 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
                       }}>Player: <span className='text-sky-500 px-1'>{username}</span></Typography>
                       <Typography variant="body1" color={'white'} sx={{fontSize:15
                       }}>Room: <span className='text-sky-500 px-1'>{room}</span></Typography>
-                      <Typography variant="body1" color={'white'} sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize:15
-                      }}>Opponent: <span className='text-orange-500 px-1 fw-bold'>{player_identity === 'player-1' ? playersStates['player-2'].username : playersStates['player-1'].username}</span></Typography>
                     </div>
                   </Grid>
 
-                  <Typography variant="body1" color={'white'} sx={{display:'flex',fontSize:17}}>
-                      Moves Remaining: <span className='text-green-600'></span>
-                  </Typography>
                 <Grid container spacing={2} sx={{margin:'auto',textAlign:'center',alignItems:"center",position:'center'}} columns={16}>
                   {playerHouses.map((houseName, index) => (
                     <Grid item xs={6} sm={2} md={2} lg={2} key={index}>
