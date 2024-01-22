@@ -1,11 +1,11 @@
 import { useState,useCallback,useEffect } from "react";
-import { Container, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
 import Canvas from "./components/Game/Logic/Oware";
 import socket from './socket';
 import CustomDialog from "./components/Customs/CustomDialog";
 import InitGame from "./InitGame";
 import { Players } from "./components/Game/Logic/Oware";
-import { Identity } from "./components/Game/Logic/Oware";
+
 
 function Game() {
 

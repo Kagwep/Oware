@@ -1,9 +1,8 @@
 import './style.css';
-import React, { useEffect, useRef,useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef,useState} from 'react';
 import {
     Scene,
     Engine,
-    FreeCamera,
     Vector3,
     HemisphericLight,
     MeshBuilder,
@@ -11,37 +10,27 @@ import {
     Texture,
     SceneLoader,
     Mesh,
-    ISceneLoaderAsyncResult,
     AbstractMesh,
-    PhysicsImpostor,
     VertexBuffer,
     ArcRotateCamera,
-    CubeTexture,
-    ActionManager,
-    ExecuteCodeAction,
-    DynamicTexture,
     Color3,
-    FlowGraphConsoleLogBlock,
+
     
   } from "@babylonjs/core";
 import './style.css';
 import '@babylonjs/loaders';
 import {House, houses} from './House';
-import { Seed, seeds,Seeds } from './Seed';
+import { Seeds } from './Seed';
 import { state,playersStates } from './GameState';
 import { housesToAccess } from './House';
 import sphereTexture from "../Textures/nuttexture3.avif";
 import CustomDialog from '../../Customs/CustomDialog';
 import { Card, CardContent, CircularProgress, Typography, Grid ,Paper} from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
 import {Button} from '@mui/material';
 import socket from "../../../socket";
 import HouseIcon from '@mui/icons-material/House';
-import FlashButton from '../GameComponents/PlayersTurn';
-import { usePlayerTurn } from '../GameComponents/PlayerTurn';
-import * as GUI from 'babylonjs-gui';
 import { start } from './GameState';
 
 
@@ -57,8 +46,8 @@ export interface Identity {
 export interface CanvasProps {
   players:Players[];
   room:string;
-  orientation:string;
-  cleanup:() => void;
+  orientation?:string;
+  cleanup?:() => void;
   username:string;
   player_identity:string;
 }
@@ -79,38 +68,18 @@ interface Move {
 
 }
 
-const houseContainerStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-};
-
-const housePaperStyle: React.CSSProperties = {
-  padding: '16px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-};
-
-const houseIconStyle: React.CSSProperties = {
-  marginRight: '8px',
-};
 
 
-  
-
-const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,username,player_identity }) => {
+const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }) => {
 
     const [over, setOver] = useState("");
     const [isCopied, setIsCopied] = useState(false);
-    const [originalHouse, setOriginalHouses] = useState<string[]>([]);
-    const [dice_rolled, setDiceRolled] = useState<boolean>(false);
     const [playerHouses, setPlayerHouses] = useState<string[]>([]);
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [playerTurn, setPlayerTurn] = useState<string>("");
 
 
-    let playerT = "";
+ 
     
 
     //console.log(player_identity);
@@ -141,7 +110,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room, orientation, cleanup,user
         const engine = new Engine(canvas, true);
         const scene = new Scene(engine);
         let playing_next = player_identity;
-        playerT = playing_next;
+     
 
         
 

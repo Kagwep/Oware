@@ -15,7 +15,7 @@ interface CustomDialogProps {
   handleClose?:() => void;
 }
 
-const CustomDialog: React.FC<CustomDialogProps> = ({ open, children, title, contentText, handleContinue,handleClose }) => {
+const CustomDialog: React.FC<CustomDialogProps> = ({ open, children, title, contentText, handleContinue }) => {
   return (
     <Dialog open={open}> {/*dialog container*/}
       <DialogTitle>{title}</DialogTitle>

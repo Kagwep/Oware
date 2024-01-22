@@ -3,7 +3,7 @@ import React,{ useState } from "react";
 import CustomDialog from "./components/Customs/CustomDialog";
 import socket from './socket';
 import { Players } from "./components/Game/Logic/Oware";
-import { Identity } from "./components/Game/Logic/Oware";
+
 
 
 export interface ServerJoinRoomResponse {
