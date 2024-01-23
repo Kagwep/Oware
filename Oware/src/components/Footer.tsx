@@ -76,7 +76,7 @@ const Footer = () => {
             </div>
             <hr/>
             <div className="content-2">
-                <span className="copiright">© 2021 Outpost Games, Inc. All Rights Reserved</span>
+                <span className="copiright">© 2021 Calisto Games, Inc. All Rights Reserved</span>
                 <div className="author">
                     <span>
                         Made @ 
