@@ -4,8 +4,12 @@ import Scroll from 'react-scroll';
 import '../css/Header.scss';
 import '../css/Navbar.scss';
 import logo from '../assets/images/logo.png'
+import { useWallet } from '../contexts/WalletContex';
 
 const Navbar = () => {
+
+    const { provider, account, connectWallet, disconnectWallet } = useWallet();
+
     const [toggleMenu, setToggleMenu] = useState(false);
     const [toggleLang, setToggleLang] = useState(false);
     const [toggleMenuScroll, setToggleMenuScroll] = useState(false);
@@ -102,6 +106,7 @@ const Navbar = () => {
                         </Link>
 
                     </div> */}
+
                 </ul>
 
                 <div className="lang-container">
@@ -118,6 +123,18 @@ const Navbar = () => {
                     </div>
                 </div>
 
+                <div>
+                    {account ? (
+                        <>
+                            {/* <p>Connected Account: {account}</p> */}
+                            <button onClick={disconnectWallet} className="bg-amber-500 hover:bg-amber-300 text-white text-xl font-bold py-2 px-4 border border-amber-500 rounded">Disconnect Wallet</button>
+                        </>
+                    ) : (
+                        <button onClick={connectWallet} className="bg-amber-600 hover:bg-amber-300 text-white text-xl font-bold py-2 px-4 border border-amber-700 rounded">Connect Wallet</button>
+                    )}
+                    {/* Your React component content here */}
+                </div>
+
                 {/* <div className="container-sponsor">
                     <Link to="#">
                         <img src={XboxIcon} alt=""/>
@@ -127,6 +144,8 @@ const Navbar = () => {
                     </Link>
 
                 </div> */}
+
+
                 
 
 
