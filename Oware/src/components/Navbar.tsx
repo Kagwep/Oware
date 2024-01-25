@@ -96,6 +96,11 @@ const Navbar = () => {
                             >
                             Quotes</ScrollLink>
                     </li>
+                    <li>
+                        <Link to="/profiles"  className='nav-links'>
+                            Profiles
+                        </Link>
+                    </li>
 {/* 
                     <div className="container-sponsor-inside-nav-menu">
                         <Link to="#">
