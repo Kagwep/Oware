@@ -11,7 +11,7 @@ declare global {
 // Define a context
 interface WalletContextType {
     provider: ethers.providers.Web3Provider | null;
-    account: string | null;
+    account: string[] | null;
     connectWallet: () => Promise<void>;
     disconnectWallet: () => void;
     contract:ethers.Contract | null;
@@ -29,7 +29,7 @@ interface WalletProviderProps {
 // Define a provider component that will wrap your app
 export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
     const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
-    const [account, setAccount] = useState<string | null>(null);
+    const [account, setAccount] = useState<string[] | null>(null);
     const [contract, setContract] = useState<ethers.Contract | null>(null);
     const [signer, setSigner] = useState<any>(null);
 

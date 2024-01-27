@@ -16,6 +16,7 @@
     "@emotion/styled": "^11.11.0",
     "@metamask/providers": "^14.0.2",
     "@mui/icons-material": "^5.15.5",
+    "@mui/lab": "^5.0.0-alpha.162",
     "@mui/material": "^5.15.5",
     "@mui/system": "^5.15.5",
     "babylonjs-gui": "^6.39.0",
@@ -28,7 +29,8 @@
     "react-slick": "^0.30.0",
     "sass": "^1.70.0",
     "slick-carousel": "^1.8.1",
-    "socket.io-client": "^4.7.4"
+    "socket.io-client": "^4.7.4",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -36,6 +38,7 @@
     "@types/react-dom": "^18.2.17",
     "@types/react-scroll": "^1.8.10",
     "@types/react-slick": "^0.23.13",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",

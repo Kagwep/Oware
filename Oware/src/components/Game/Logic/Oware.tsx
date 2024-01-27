@@ -32,6 +32,9 @@ import {Button} from '@mui/material';
 import socket from "../../../socket";
 import HouseIcon from '@mui/icons-material/House';
 import { start } from './GameState';
+import { v4 as uuidv4 } from 'uuid';
+import { ethers } from 'ethers';
+import { useWallet } from '../../../contexts/WalletContex';
 
 
 export interface Players {
@@ -68,26 +71,31 @@ interface Move {
 
 }
 
+// uint256 winId, string memory winTrace,address opponent,string memory player_username
+interface Register {
+ winId:string;
+ winTrace:string;
+ opponent_address:string;
+ player_username:string;
+
+}
 
 
-const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }) => {
+
+const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity,cleanup }) => {
 
     const [over, setOver] = useState("");
     const [isCopied, setIsCopied] = useState(false);
     const [playerHouses, setPlayerHouses] = useState<string[]>([]);
     const [inProgress, setInProgress] = useState<boolean>(false);
     const [playerTurn, setPlayerTurn] = useState<string>("");
+    const { provider, account, connectWallet, disconnectWallet,contract,signer } = useWallet();
 
 
  
     
 
     //console.log(player_identity);
-
-
-
-
-
     const handleCopySuccess = () => {
       setIsCopied(true);
     };
@@ -110,11 +118,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
         const engine = new Engine(canvas, true);
         const scene = new Scene(engine);
         let playing_next = player_identity;
-     
 
-        
-
-        
+        let trace = ""
       
         var camera = new ArcRotateCamera("camera1", 0,  0, 10, Vector3.Zero(), scene);
 
@@ -142,6 +147,17 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
         //   console.log('meshes',meshes)
         // })
 
+        const registerWin = async(winId:string,winTrace:string,opponent_address:string,player_username:string) =>{
+
+            if (contract){
+              const transaction = await contract.recordWin(winId, winTrace,opponent_address,player_username);
+              await transaction.wait();
+              
+
+            }
+
+        }
+  
         
         
         const loadModels = async (modelName:string) => {
@@ -538,6 +554,12 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
         return false; // No collision detected
       }
 
+      // winId:string;
+      // winTrace:string;
+      // opponent_address:string;
+      // player_username:string;
+
+
  
 
       function applyRandomDeformities(mesh: Mesh, strength: number) {
@@ -745,6 +767,8 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
                   const seeds = house.seeds;
                   const captureMesh = meshes_capture.find(mesh => mesh.name === 'capture-house');
 
+                  trace = trace + " " + clickedMesh.name;
+
                   seeds.forEach((seed) => {
                     // Find the sphere in the addedSpheres array by name
                    
@@ -767,6 +791,16 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
                       addSphereInsideMesh(captureMesh,seed.seedName,true);
 
                       if (capturedSpheres.length > 24){
+
+                        const win_id = uuidv4();
+                        const winId = win_id;
+                        const winTrace = trace;
+                        const opponent_address = "0x12";
+                        const opponentAddress = ethers.utils.getAddress(opponent_address);
+                        const player_username = username;
+
+                        registerWin(winId,winTrace,opponentAddress,player_username);
+
                         console.log(" You are the winner!!!")
                       }
                       // Remove the disposed sphere from the addedSpheres array
@@ -947,8 +981,23 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
           }
         }
       }, [isWaitingForOpponent, inProgress, player_identity, housesToAccess, playerHouses, playerTurn]);
+
+      useEffect(() => {
+        socket.on('playerDisconnected', (player) => {
+          setOver(`${player.username} has disconnected`); // set game over
+        });
+      }, []);
     
-      
+  
+      useEffect(() => {
+        socket.on('closeRoom', ({ roomId }) => {
+          if (roomId === room) {
+            if (cleanup) {
+              cleanup();
+          }
+          }
+        });
+      }, [room, cleanup]);
 
 
   return (
@@ -1021,12 +1070,15 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity }
         
         </canvas>
         </div>
-        <CustomDialog // <- 5
-        open={Boolean(over)} 
+      <CustomDialog // Game Over CustomDialog
+        open={Boolean(over)}
         title={over}
         contentText={over}
         handleContinue={() => {
-          setOver("");
+          socket.emit("closeRoom", { roomId: room });
+          if (cleanup) {
+            cleanup();
+        }
         }}
       />
     </>

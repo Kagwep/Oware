@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState,useEffect } from 'react'
 import '../css/ProfileHeader.css'
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
@@ -9,6 +9,38 @@ import { Link  } from 'react-router-dom';
 import '../css/item.css'
 import creator from '../assets/images/player.png'
 import item from '../assets/images/item.jfif'
+import WalletAddress from './Customs/WAlletAddress';
+import { useWallet } from '../contexts/WalletContex';
+import { ethers } from 'ethers';
+import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
+
+interface Player {
+  playerAddress: string;
+  username: string;
+  gamesPlayed: number;
+  rewardsCount: number;
+  playerRank: number;
+  wins: string[]; // Array storing game IDs of wins
+}
+
+interface Game {
+  gameId: number;
+  player1: string; 
+  player2: string; 
+  winner: string | null; 
+}
+
+interface Win {
+  winId: number;
+  winTrace: string;
+  winningPlayer: string; 
+}
+
+
 const ProfileHeader = () => {
   var settings = {
     dots: false,
@@ -67,6 +99,55 @@ const ProfileHeader = () => {
       }
     ]
   };
+
+  const { provider, account, connectWallet, disconnectWallet,contract,signer } = useWallet();
+
+
+  const[playerInfo , setPlayerInfo] = useState<Player[] >([]);
+  const[playersInfo , setPlayersInfo] = useState<Player[] >([]);
+  const [tokenBalance, setTokenBalances] = useState<number | null>(null);
+  const [games, setGames] = useState<Game[] | null>(null);
+  const [wins, setWins] = useState<Win[] | null>(null);
+  const [value, setValue] = React.useState('1');
+
+  const handleChange = (event: React.SyntheticEvent, newValue: string) => {
+    setValue(newValue);
+  };
+
+
+      useEffect(() => {
+        const fetchData = async () => {
+          console.log(contract,account)
+            if (account && contract) {
+              
+                const playerAddress = ethers.utils.getAddress(account[0]);
+                const players_info = await contract.getAllPlayers();
+                const player_info = players_info.find((player_info: { address: string; }) => player_info.address === playerAddress);
+                
+                setPlayersInfo(players_info);
+                if (player_info){
+                    setPlayerInfo(player_info);
+                }
+
+                const tokenBalances = await contract.getBalanceOf(playerAddress);
+
+                setTokenBalances(tokenBalances);
+               // console.log("token balances",tokenBalances);
+               
+               //console.log("hello");
+                
+              
+
+            }
+        };
+
+        fetchData(); // Call the function inside useEffect
+
+    }, [contract,account]); 
+
+    //console.log("token balances",tokenBalance);
+
+
   return (
     <>
     <div className='item section__padding'>
@@ -75,21 +156,39 @@ const ProfileHeader = () => {
         </div>
           <div className="item-content">
             <div className="item-content-title">
-              <h1>Abstact Smoke Red Blue</h1>
-              <p>From <span>4.5 ETH</span> ‧ 20 of 25 available</p>
+              {
+                account ? (
+                  <WalletAddress address={account[0]} />
+                ):(
+                  <h1 className='text-sky-500'> connect wallet </h1>
+                )
+              }
+              
+              <p>Tokens <span className='text-blue-500'> {tokenBalance && parseFloat(ethers.utils.formatEther(tokenBalance)) !==0  ? tokenBalance.toString() : 'play to earn tokens'}</span> </p>
             </div>
             <div className="item-content-creator">
-              <div><p>Creater</p></div>
+              <div><p>Player</p></div>
               <div>
                 <img src={creator} alt="creator" />
-                <p>Rian Leon </p>
+                <p> {playerInfo && playerInfo.length > 0 && (
+                        <span>{playerInfo[0].username}</span>
+                    )}</p>
               </div>
             </div>
             <div className="item-content-detail">
-              <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book</p>
+              <p>Rank: 
+              {playerInfo && playerInfo.length > 0 && (
+                        <span>{playerInfo[0].playerRank}</span>
+                    )}
+              </p>
+              <p>Wins:
+              {playerInfo && playerInfo.length > 0 && (
+                        <span>{playerInfo[0].wins.length}</span>
+                    )}
+              </p>
             </div>
             <div className="item-content-buy">
-              <button className="primary-btn">Buy For 4.5 ETH</button>
+              <button className="primary-btn">Buy </button>
               <button className="secondary-btn">Make Offer</button>
             </div>
           </div>
@@ -102,72 +201,89 @@ const ProfileHeader = () => {
         </div>
       </div>
       <div className="headerProfile-slider">
-        <h1>Top Players</h1>
-       <Slider {...settings} className='slider'>
-            <div className='slider-card'>
-              <p className='slider-card-number'>1</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>James Bond</p>
-              </Link>
-              <p className='slider-card-price'>5.250 <span>ETH</span></p>
-            </div>
-            <div className='slider-card'>
-              <p className='slider-card-number'>2</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>Rian Leon</p>
-              </Link>
-              <p className='slider-card-price'>4.932 <span>ETH</span></p>
-            </div>
-            <div className='slider-card'>
-              <p className='slider-card-number'>3</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>Lady Young</p>
-              </Link>
-              <p className='slider-card-price'>4.620 <span>ETH</span></p>
-            </div>
-            <div className='slider-card'>
-              <p className='slider-card-number'>4</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>Black Glass</p>
-              </Link>
-              <p className='slider-card-price'>4.125 <span>ETH</span></p>
-            </div>
-            <div className='slider-card'>
-              <p className='slider-card-number'>5</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>Budhiman</p>
-              </Link>
-              <p className='slider-card-price'>3.921 <span>ETH</span></p>
-            </div>
-            <div className='slider-card'>
-              <p className='slider-card-number'>6</p>
-              <div className="slider-img">
-                <img src={player} alt="" />
-              </div>
-              <Link to={`/profile/Rian`}>
-              <p className='slider-card-name'>Alex</p>
-              </Link>
-              <p className='slider-card-price'>3.548 <span>ETH</span></p>
-            </div>
-        </Slider>
+          <h1>Top Players</h1>
+          <Slider {...settings} className='slider'>
+              {playersInfo
+                  .sort((a, b) => a.playerRank - b.playerRank) // Sort players by rank
+                  .slice(0, 6) // Take the top six players
+                  .map((player, index) => (
+                      <div className='slider-card' key={index}>
+                          <p className='slider-card-number'>{index + 1}</p>
+                          <div className="slider-img">
+                              <img src={creator} alt="" />
+                          </div>
+                          <Link to={`/profile/${player.username}`}>
+                              <p className='slider-card-name'>{player.username}</p>
+                          </Link>
+                          <p className='slider-card-price'>{player.rewardsCount} <span>Tokens</span></p>
+                      </div>
+                  ))
+              }
+          </Slider>
       </div>
+
+      <Box sx={{     width: {
+      xs: '100%', 
+      sm: '90%',  
+      md: '60%',  
+    }, typography: 'body1',color:'white' }}>
+      <TabContext value={value}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <TabList onChange={handleChange} aria-label="lab API tabs example">
+            <Tab sx={{color:'green'}} label="Wins" value="1" />
+            <Tab sx={{color:'green'}} label="Games" value="2" />
+          </TabList>
+        </Box>
+        <TabPanel value="1">
+        <div className="overflow-x-auto">
+            <table className="table-auto min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xl font-bold font-medium text-orange-700 uppercase tracking-wider">Win ID</th>
+                        <th className="px-6 py-3 text-left text-xl font-medium text-orange-700 uppercase tracking-wider">Win Trace</th>
+                        <th className="px-6 py-3 text-left text-xl font-medium text-orange-700 uppercase tracking-wider">Winning Player</th>
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                    {wins && wins.map((win) => (
+                        <tr key={win.winId}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{win.winId}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{win.winTrace}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{win.winningPlayer}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+        </TabPanel>
+        <TabPanel sx={{
+          borderRadius:10
+        }} value="2">
+        <div className="overflow-x-auto">
+            <table className="table-auto min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                    <tr>
+                        <th className="px-6 py-3 text-left text-xl font-bold font-medium text-amber-700 uppercase tracking-wider">Game ID</th>
+                        <th className="px-6 py-3 text-left text-xl font-bold font-medium text-amber-700 uppercase tracking-wider">Player 1</th>
+                        <th className="px-6 py-3 text-left text-xl font-bold font-medium text-amber-700 uppercase tracking-wider">Player 2</th>
+                        <th className="px-6 py-3 text-left text-xl font-bold font-medium text-amber-700 uppercase tracking-wider">Winner</th>
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                    {games && games.map((game) => (
+                        <tr key={game.gameId}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{game.gameId}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{game.player1}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{game.player2}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{game.winner}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+        </TabPanel>
+      </TabContext>
+    </Box>
     </div>
     </>
   )
