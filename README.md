@@ -2,6 +2,34 @@
 
 ![Oware](https://res.cloudinary.com/duybctvku/image/upload/v1705537017/iuqrtipgfbayh9kxcwmt.jpg)
 
+## About Oware
+LIVE LINK: https://oware.vercel.app/
+
+Description: Oware is a traditional African strategy game known for its simplicity and deep strategic gameplay. 
+The game involves sowing seeds across 12 houses, capturing opponents' seeds, and strategic thinking to outwit your opponent.
+
+## Features
+
+- **Smart Contracts with Solidity**: The game logic is implemented as Ethereum smart contracts using Solidity, ensuring transparency and security.
+
+- **Decentralized Development with Hardhat**: We use Hardhat, a development environment for Ethereum, to compile, deploy, and test our smart contracts. It simplifies the development process and supports TypeScript.
+
+- **Areon Network on MetaMask**: The game leverages the Areon blockchain network, providing a decentralized infrastructure for secure and transparent transactions. Players can interact with the game using MetaMask.
+
+- **3D Visualization with Babylon.js and Blender**: Immerse yourself in the Oware world with 3D visualization powered by Babylon.js. The models are created using Blender, ensuring a visually appealing and engaging gaming experience.
+
+- **VP3 Token**: Oware introduces the VP3 token, a digital asset within the game. Players can earn and trade VP3 tokens as rewards for their achievements.
+
+## Development Setup
+
+1. **Install Dependencies**: Run `npm install` to install the necessary dependencies.
+
+2. **Compile Contracts**: Use Hardhat to compile the Solidity smart contracts with `npx hardhat compile`.
+
+3. **Deploy Contracts**: Deploy the contracts to the Aerum network using `npx hardhat deploy`.
+
+4. **Run Locally**: Test the game locally with Hardhat Network or deploy it to a testnet.
+
 ## How to Set-Up
 1. Oware is played on a board with 12 large play spaces (houses) around the outside of the board and one large score house for each player in the center.
 2. Oware requires 48 beads of any color. 4 beads are placed into each of the houses to start the game.
