@@ -28,7 +28,7 @@ The game involves sowing seeds across 12 houses, capturing opponents' seeds, and
 
 3. **Deploy Contracts**: Deploy the contracts to the Aerum network using `npx hardhat deploy`.
 
-4. **Run Locally**: Test the game locally with Hardhat Network or deploy it to a testnet.
+4. **Run Locally**: Test the game locally with Hardhat Network or deploy it to a testnet `np`.
 
 ## How to Set-Up
 1. Oware is played on a board with 12 large play spaces (houses) around the outside of the board and one large score house for each player in the center.
@@ -45,11 +45,45 @@ The game involves sowing seeds across 12 houses, capturing opponents' seeds, and
 7. All captured beads are placed into the player’s score house.
 
 ## How to Win
-1. To win the game, a player must capture more beads than their opponent.
+1. To win the game, a player must capture >=25 beads than their opponent.
 2. The game ends in a draw if both players have 24 seeds.
 
+## Technologies Used
+- Solidity
+- Metamask (Areon Network)
+- Hardhart
+- Babylon.js
+- Blender
+- Vp3
 
+## Contributing
+Contributions to Oware smart contract are welcome! Here are some ways you can help:
 
+    Report bugs and issues on GitHub. Please include steps to reproduce, expected vs actual behavior, and any relevant code.
+    Suggest new features and enhancements using the GitHub issues.
+    Improve documentation by submitting pull requests with additions, clarifications or fixes.
+    Find and submit security vulnerabilities through responsible disclosure.
+    Optimize gas usage and improve code efficiency.
+    Add test cases to increase code coverage.
+    Help translate project content for internationalization.
+    Promote the project by publishing articles, tutorials, videos etc.
+
+Pull Requests
+
+Pull requests should target the develop branch. Follow these steps:
+
+    Fork the repo and create your branch from develop.
+    Make your code changes following existing styles.
+    Ensure CI builds pass and has no conflicts.
+    Update documentation as needed.
+    Describe PR intent clearly with details.
+
+## License
+- MIT Licenses
+
+## Contact Information
+Peter: kagwepeter07@gmail.com [github](https://github.com/Kagwep)
+Ted: ogolated00@gmail.com [github](https://github.com/Ted1166)
 
 
 
