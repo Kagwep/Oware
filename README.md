@@ -10,7 +10,7 @@ The game involves sowing seeds across 12 houses, capturing opponents' seeds, and
 
 ## Features
 
-- **Smart Contracts with Solidity**: The game logic is implemented as Ethereum smart contracts using Solidity, ensuring transparency and security.
+- **Smart Contracts with Solidity**: The game logic is implemented as a smart contracts using Solidity, ensuring transparency and security.
 
 - **Decentralized Development with Hardhat**: We use Hardhat, a development environment for Ethereum, to compile, deploy, and test our smart contracts. It simplifies the development process and supports TypeScript.
 
