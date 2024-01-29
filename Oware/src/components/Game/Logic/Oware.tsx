@@ -994,7 +994,7 @@ const Canvas:React.FC<CanvasProps> = ({ players, room,username,player_identity,c
           if (roomId === room) {
             if (cleanup) {
               cleanup();
-          }
+          }90
           }
         });
       }, [room, cleanup]);

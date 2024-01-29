@@ -1,6 +1,6 @@
 # Oware Game
 
-![Oware](https://res.cloudinary.com/duybctvku/image/upload/v1705537017/iuqrtipgfbayh9kxcwmt.jpg)
+![Oware](https://res.cloudinary.com/duybctvku/image/upload/v1706537308/oware1_bqkmyd.png)
 
 ## About Oware
 LIVE LINK: https://oware.vercel.app/
@@ -36,6 +36,40 @@ The game involves sowing seeds across 12 houses, capturing opponents' seeds, and
 3. Players decide who begins the game by rolling a die.
 
 ## How to Play
+
+Starting the Game:
+
+Start a new game by creating a new room.
+Follow the prompts to initiate the game setup.
+Click Copy Room ID to Clipboard:
+
+
+Open the messaging app or communication platform you want to use to share the Room ID with your opponent.
+Paste the copied Room ID into a message or chat window.
+Send the message to your opponent, along with any additional instructions they might need.
+
+Joining the Game:
+
+The opponent receives the message containing the Room ID.
+They navigate to the same game platform.
+Look for the option to join an existing game or enter a room using a specific code.
+
+Entering the Room:
+
+In the game's interface, they should find the option to join an existing game or enter a room.
+Select the appropriate option and are prompted to enter the Room ID.
+
+Starting the Game:
+
+The game should begin once both players are successfully in the room.
+
+Understanding Player Positions:
+
+Player one  has houses numbered 1 to 6 clockwise.
+Player two has houses numbered 7 to 12 (top row).
+
+Commence Gameplay:
+
 1. In turns, players pick up all the beads from any 1 of the houses on their side of the board and redistribute them 1 bead per house counter-clockwise, including houses on their opponent’s side of the board.
 2. If a player has 12 or more beads to redistribute, they must skip the original house, leaving it empty at the end of the turn.
 3. If a player’s final bead is deposited in a house on their side of the board, they take another turn.
