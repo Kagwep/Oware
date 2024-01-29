@@ -18,7 +18,7 @@ The game involves sowing seeds across 12 houses, capturing opponents' seeds, and
 
 - **3D Visualization with Babylon.js and Blender**: Immerse yourself in the Oware world with 3D visualization powered by Babylon.js. The models are created using Blender, ensuring a visually appealing and engaging gaming experience.
 
-- **VP3 Token**: Oware introduces the VP3 token, a digital asset within the game. Players can earn and trade VP3 tokens as rewards for their achievements.
+- **OWR Token**: Oware introduces the OWR token, a digital asset within the game. Players can earn and trade OWR tokens as rewards for their achievements.
 
 ## Development Setup
 
@@ -88,7 +88,7 @@ Commence Gameplay:
 - Hardhart
 - Babylon.js
 - Blender
-- Vp3
+- OWR
 
 ## Contributing
 Contributions to Oware smart contract are welcome! Here are some ways you can help:
