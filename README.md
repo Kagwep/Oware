@@ -5,8 +5,11 @@
 ## About Oware
 LIVE LINK: https://oware.vercel.app/
 
-Description: Oware is a traditional African strategy game known for its simplicity and deep strategic gameplay. 
-The game involves sowing seeds across 12 houses, capturing opponents' seeds, and strategic thinking to outwit your opponent.
+Oware is a strategic board game where each player is assigned six houses arranged in a circular pattern. Additionally, there is a score house at the the end for each player. The game employs a total of 48 beads, initially distributing four beads in each of the twelve houses.
+
+The main goal of the game is for players to strategically navigate their beads across the board arrangement, with the aim of capturing more beads than their opponent. The outer edge of the board consists of twelve play spaces or houses, forming the primary arena for gameplay. Each player's six houses create a distinct territory where the strategic maneuvers take place.
+
+The  score houses acts as the destination for accumulated beads, while the six houses on each player's side serve as the playing field. A player wins after successfuly capturing 25 beads or more. It ends in a draw if both players capture 24. The win traces which can be verified that such movews can lead to a win are stored on Areon network and the players recieve redeamable nft tokens.
 
 ## Features
 
